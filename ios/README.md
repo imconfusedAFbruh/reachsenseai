@@ -2,15 +2,15 @@
 
 This is Milestone 1 software for front TrueDepth feasibility work. It is not yet the full measurement app and produces no flexibility score.
 
-## Build on a Mac
-
 ## Build from Windows with GitHub Actions
 
-Open **Actions → Native verification and research IPA → Run workflow**, select the branch containing this workflow update, and run it. The workflow runs Swift core checks, builds the Release iPhone app and simulator target on a cloud Mac, packages the device app, verifies the IPA structure and ARM64 executable, and uploads `ReachSenseAI-unsigned-<commit>` under the completed run's **Artifacts**.
+Open the [native workflow](https://github.com/imconfusedAFbruh/reachsenseai/actions/workflows/native.yml), choose **Run workflow**, select `develop/rgb-web` (which contains the IPA packaging update), and run it. The workflow runs Swift core checks, builds the Release iPhone app and simulator target on a cloud Mac, packages the device app, verifies the IPA structure and ARM64 executable, and uploads `ReachSenseAI-unsigned-<commit>` under the completed run's **Artifacts**.
 
 Download and unzip that artifact ZIP to obtain `ReachSenseAI-unsigned.ipa`. This is an **unsigned native TrueDepth sensor prototype**, not the full measurement app or the browser application. It must be signed before installation. Windows users can sign and install it using [Sideloadly](https://sideloadly.io/) and their own Apple Account. Free-account signing requires periodic refresh; successful compilation/package verification does not establish physical-device capture support. Keep downloaded artifacts locally for your research; GitHub artifact retention is finite.
 
 The build needs no Apple signing secrets or Apple Account credentials in GitHub. Research recording consent and local export behavior remain as described below.
+
+First verified build, 2026-10-07: [run 37538730987](https://github.com/imconfusedAFbruh/reachsenseai/actions/runs/37538730987), source `ab7edecb703eadaa34a75b43c7a1d884e24b739d`. All workflow jobs passed. The downloaded IPA was independently checked on Windows for ZIP integrity, the iPhoneOS platform, camera permission description and ARM64 Mach-O executable. Size: 162,076 bytes. SHA-256: `c884a4224df2328e03b1a38dc07c1d3553c5f2395a552f3f41d24585196d6621`. Signing, installation and real-device capture remain unverified.
 
 ## Build locally on a Mac
 
