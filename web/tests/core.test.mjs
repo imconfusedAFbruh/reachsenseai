@@ -24,7 +24,8 @@ test('reject missing, malformed, duplicate, improper and incompatible calibratio
   for (const edit of [b=>b.units='meters',b=>b.camera.K[0][0]=NaN,
     b=>b.fixtures[1].faces[0].id=21,b=>b.bodyTransform[0][0]=-1,
     b=>b.fixtures[0].faces[0].corners[0]=[1,2],b=>b.quality.maxAgeMs=-1,
-    b=>b.assignments.body='a',b=>delete b.quality.ambiguityRmsPx]) {
+    b=>b.assignments.body='a',b=>delete b.quality.ambiguityRmsPx,
+    b=>b.fixtures[0].faces[0].corners[2]=b.fixtures[0].faces[0].corners[0]]) {
     const b=bundle(); edit(b); assert.throws(()=>validateCalibration(b));
   }
   assert.equal(validateCalibration(bundle()).units,'mm');

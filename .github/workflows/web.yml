@@ -25,9 +25,14 @@ jobs:
       - run: npm test && npm run browser-test
         working-directory: web
       - uses: actions/configure-pages@v5
+      - name: Stage runtime assets
+        run: |
+          mkdir site
+          cp web/*.html web/*.css web/*.js site/
+          cp -r web/vendor web/examples site/
       - uses: actions/upload-pages-artifact@v4
         with:
-          path: web
+          path: site
   deploy:
     needs: build
     runs-on: ubuntu-latest

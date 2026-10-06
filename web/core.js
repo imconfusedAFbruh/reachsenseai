@@ -39,7 +39,9 @@ export function validateCalibration(input) {
       const p=face.corners;
       if(!Array.isArray(p)||p.length!==4||!p.every(v=>vector(v,3)))fail('Four canonical 3D corners required');
       const a=sub(p[1],p[0]), d=sub(p[3],p[0]), n=cross(a,d);
-      if(length(n)<1e-6||Math.abs(dot(sub(p[2],p[0]),n))/length(n)>0.01||p.some((v,i)=>length(sub(v,p[(i+1)%4]))<0.1))fail('Degenerate/nonplanar marker face');
+      if(length(n)<1e-6||Math.abs(dot(sub(p[2],p[0]),n))/length(n)>0.01||
+        p.some((v,i)=>p.some((w,j)=>i!==j&&length(sub(v,w))<0.1))||
+        p.some((v,i)=>dot(cross(sub(p[(i+1)%4],v),sub(p[(i+2)%4],p[(i+1)%4])),n)<=1e-6))fail('Degenerate/nonplanar marker face');
     }
   }
   const a=b.assignments;

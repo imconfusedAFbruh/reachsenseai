@@ -81,4 +81,35 @@ try {
   const download=await downloadPromise;
   assert.match(download.suggestedFilename(),/\.json$/);
   console.log('PASS calibration binding, exploratory labeling, blocked attempts and JSON export');
+  const cameraPage=await browser.newPage();
+  await cameraPage.addInitScript(()=>{
+    navigator.mediaDevices.getUserMedia=async()=>{
+      const c=document.createElement('canvas');c.width=960;c.height=720;
+      const paint=()=>{const x=c.getContext('2d');x.fillStyle='white';x.fillRect(0,0,960,720);requestAnimationFrame(paint);};paint();
+      return c.captureStream(30);
+    };
+  });
+  await cameraPage.goto(url+'/');await cameraPage.locator('#participant').fill('browser-check');
+  await cameraPage.locator('#example').click();
+  await cameraPage.waitForFunction(()=>document.querySelector('#calibrationStatus').textContent.includes('EXPLORATORY'));
+  await cameraPage.locator('#binding').check();await cameraPage.locator('#start').click();
+  await cameraPage.waitForFunction(()=>!document.querySelector('#attempt').disabled);
+  await cameraPage.locator('#preseat').check();await cameraPage.locator('#attempt').click();
+  await cameraPage.waitForFunction(()=>document.querySelector('#performance').textContent.includes('processed fps'));
+  // Wait for the recorded frame transaction, then verify the active attempt survives persistence.
+  await cameraPage.waitForFunction(()=>/· [1-9]\d* recorded observations/.test(document.querySelector('#trialStatus').textContent));
+  const activeRecord=await cameraPage.evaluate(async()=>{const {loadSessions}=await import('/storage.js');return (await loadSessions()).find(s=>s.participant==='browser-check'&&s.frames.length>0);});
+  assert.ok(activeRecord.active,'Active attempt must be persisted, not only finalized attempts');
+  assert.equal(activeRecord.frames[0].rgb,undefined,'Unconsented RGB must not be stored');
+  await cameraPage.locator('#stop').click();
+  assert.equal(await cameraPage.locator('#binding').isChecked(),false,'Camera binding must be reconfirmed after stop');
+  const dPromise=cameraPage.waitForEvent('download');await cameraPage.locator('#json').click();
+  const file=await(await dPromise).path();const exported=JSON.parse(await readFile(file,'utf8'));
+  assert.equal(exported.sessions[0].attempts[0].reason,'camera-stopped');
+  assert.ok(exported.sessions[0].frames.length>0);
+  await cameraPage.reload();const persistedPromise=cameraPage.waitForEvent('download');await cameraPage.locator('#json').click();
+  const persisted=JSON.parse(await readFile(await(await persistedPromise).path(),'utf8'));
+  assert.equal(persisted.sessions[0].attempts[0].reason,'camera-stopped');
+  console.log('PASS fake camera, per-frame retention, active persistence, stopped attempt and reload export');
+  await cameraPage.close();
 } finally { await browser.close(); await new Promise(r => server.close(r)); }
