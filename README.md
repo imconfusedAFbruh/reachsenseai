@@ -8,6 +8,10 @@ The design pairs each score with evidence about alignment, tracking, stability, 
 
 > **Project status:** methodology and architecture are documented. The native iOS app, physical fixtures, and validation experiments are still to be developed. No final accuracy claim has been established.
 
+![ReachSenseAI concept showing a front TrueDepth camera on a stand, calibrated upper-back reference, multi-face middle-finger fixtures, and a virtual fingertip close-up](docs/assets/reachsense-concept.png)
+
+*Concept illustration of the planned setup. Fixture shapes, marker patterns, and mounting are illustrative; final geometry and performance require experimental validation.*
+
 ## What it measures
 
 The participant reaches one hand down from above the shoulder and the other up from below. ReachSenseAI estimates the anatomical middle-finger endpoints in a coordinate frame registered to the participant's back.
@@ -62,23 +66,48 @@ The provisional acquisition timeout is 15 seconds. Rest is researcher-controlled
 
 ## From observations to a score
 
-```text
-Synchronized front RGB + TrueDepth
-                  ↓
-Multi-face detection + local depth surfaces
-                  ↓
-Fused upper/lower rigid-body poses
-                  ↓
-Calibrated virtual anatomical fingertips
-                  ↓
-Registered body coordinates
-                  ↓
-Signed overlap + lateral/depth quality checks
-                  ↓
-Continuous stable window + seating confirmation
-                  ↓
-Trial result → session median → CSV / JSON
+```mermaid
+flowchart TD
+    Phone["iPhone front TrueDepth"] --> RGB["Synchronized RGB"]
+    Phone --> Depth["Depth observations"]
+    RGB --> Tags["Visible hand-fixture corners"]
+    RGB --> Board["Observed ChArUco reference"]
+    Geometry["Calibrated multi-face geometry"] --> Pose
+    Tags --> Pose["One common pose per hand rigid body"]
+    Depth --> Surfaces["Registered per-face 3D surfaces"]
+    Pose --> Fusion["Quality-weighted pose fusion"]
+    Surfaces --> Fusion
+    Fusion --> Tips["Estimated virtual anatomical fingertips"]
+    TipCalibration["Physical-jig endpoint calibration"] --> Tips
+    Board --> Body["Registered body frame"]
+    MountCalibration["Board-to-body mounting calibration"] --> Body
+    Body --> Transform["Transform both tips into body coordinates"]
+    Tips --> Transform
+    Transform --> Score["Signed body-Y overlap + lateral/depth offsets"]
+    Score --> QC{"Current observations and quality checks pass?"}
+    QC -->|Yes| Window["Continuous 1-second window: median score"]
+    QC -->|No| Reject["Reject frame; reset stable window"]
+    Reject -. "Reacquire within attempt timeout" .-> Tags
+    Window --> Seating{"Post-trial seating confirmed?"}
+    Seating -->|Yes| Trial["Accepted trial"]
+    Seating -->|No| Invalid["Invalidate attempt"]
+    Trial --> Session["Median of 3 valid trials within 5 attempts"]
+    Session --> Export["Summary CSV + detailed JSON"]
+    Reject -. "Preserve failure evidence" .-> Log["Attempt and per-frame research records"]
+    Invalid --> Log
+    Log --> Export
+
+    classDef sensor fill:#e8f5f4,stroke:#147d83,color:#123c43
+    classDef calibration fill:#eef0fa,stroke:#626bb0,color:#293255
+    classDef output fill:#e5f3e9,stroke:#39835a,color:#174329
+    classDef failure fill:#fff0ee,stroke:#bd6258,color:#6f302b
+    class Phone,RGB,Depth sensor
+    class Geometry,TipCalibration,MountCalibration calibration
+    class Trial,Session,Export output
+    class Reject,Invalid failure
 ```
+
+Current observations are required for both hand rigid bodies and the body reference. Temporal prediction can assist tracking, but cannot supply a valid measurement. An incomplete three-trial set has no session score; its attempt records remain exportable.
 
 The planned implementation uses native iOS sensor processing with Swift, OpenCV, and AVFoundation/ARKit as appropriate to verified device support. Core measurement does not depend on AI hand-landmark estimation or cloud processing.
 
