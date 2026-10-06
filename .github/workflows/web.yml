@@ -10,7 +10,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -20,10 +20,11 @@ jobs:
           cache-dependency-path: web/package-lock.json
       - run: npm ci
         working-directory: web
-      - run: npx playwright install --with-deps chromium
-        working-directory: web
+      - run: google-chrome --version
       - run: npm test && npm run browser-test
         working-directory: web
+        env:
+          REACHSENSE_BROWSER_CHANNEL: chrome
       - uses: actions/configure-pages@v5
       - name: Stage runtime assets
         run: |
