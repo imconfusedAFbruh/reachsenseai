@@ -10,6 +10,8 @@ This branch builds an Android APK that tests simultaneous rear wide/ultrawide ca
 
 Each artifact includes signature/manifest evidence, the source commit, SHA-256 digest, and timing/report test results. This is a signed development APK. GitHub runners generate debug signing keys; subsequent builds can have a different key and require uninstalling the old app. **Export all retained reports before uninstalling**, which removes app-private storage. Stable private signing is required before relying on in-place upgrades across research builds.
 
+Verified software build: [run 37545350657](https://github.com/imconfusedAFbruh/reachsenseai/actions/runs/37545350657), source `d15a6c0`, artifact **ReachSenseAI-android-debug**. Build, lint, assertion checks, signature and downloaded-file integrity checks passed. S23 Ultra hardware verification remains pending.
+
 ## Run the device check
 
 1. Tap **Check cameras**. Select a candidate pair using the physical IDs and estimated FOV. Choose the main wide and ultrawide rather than either telephoto lens. IDs are discovered, not hardcoded.
