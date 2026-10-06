@@ -121,6 +121,8 @@ Scored human research follows bench acceptance. Human repeatability and equipmen
 
 ## Explore the project
 
+The [Android dual-camera APK](android/README.md) on `develop/android-dual-camera` tests simultaneous rear wide/ultrawide capture on the Samsung Galaxy S23 Ultra and exports timing evidence. GitHub Actions builds it from Windows without a local Android toolchain. Physical camera support and exposure synchronization still require checks on the phone; this capture app does not yet reconstruct stereo depth or issue a fingertip score.
+
 Build the [native sensor prototype](ios/README.md) on a Mac with Xcode, then run it on the initial iPhone 15 Pro Max to record feasibility observations. The simulator cannot supply TrueDepth data. Inspect the adjustable [finger-fixture candidate and STL](hardware/README.md), and use the [frame inspection tool](scripts/feasibility/README.md) for exported bench observations. Follow the [implementation ledger](docs/implementation-progress.md) for verified software evidence and open physical/device gates.
 
 | Document | Contents |

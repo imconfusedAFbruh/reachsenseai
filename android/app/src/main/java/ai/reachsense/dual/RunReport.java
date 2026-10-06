@@ -96,7 +96,7 @@ final class RunReport {
                     ? "observed_for_completed_run" : "not_completed",
                 "lens_identity_confirmed", new JSONArray().put(identities[0]).put(identities[1]),
                 "matched_pairs", timing.pairs.size(), "streams", new JSONArray().put(streamSummary(0)).put(streamSummary(1)),
-                "median_image_timestamp_difference_ns", percentile(differences, 0.5),
+                "median_image_timestamp_difference_ns", median(differences),
                 "p95_image_timestamp_difference_ns", percentile(differences, 0.95),
                 "maximum_image_timestamp_difference_ns", percentile(differences, 1),
                 "exposure_synchronization", TimingEvidence.exposureAssessment(sync), "stereo_readiness", "unvalidated");
@@ -118,7 +118,7 @@ final class RunReport {
             last = frame.timestampNs; valid++;
         }
         Collections.sort(intervals);
-        Long median = percentile(intervals, 0.5);
+        Double median = median(intervals);
         int gaps = 0;
         if (median != null) for (Long interval : intervals) if (interval / (double) median > 2) gaps++;
         return object("stream", stream, "observed_frames", timing.counts[stream],
@@ -144,6 +144,12 @@ final class RunReport {
     private static Long percentile(List<Long> values, double quantile) {
         if (values.isEmpty()) return null;
         return values.get(Math.max(0, (int) Math.ceil(values.size() * quantile) - 1));
+    }
+    private static Double median(List<Long> values) {
+        if (values.isEmpty()) return null;
+        int middle = values.size() / 2;
+        return values.size() % 2 == 1 ? (double) values.get(middle)
+            : values.get(middle - 1) / 2.0 + values.get(middle) / 2.0;
     }
     private static Long number(JSONObject object, String key) throws JSONException {
         return !object.has(key) || object.isNull(key) ? null : object.getLong(key);

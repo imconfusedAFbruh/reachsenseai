@@ -38,6 +38,20 @@ public final class RunReportCheck {
         Files.writeString(notDirectory.toPath(), "keep");
         try { report.save(notDirectory); throw new AssertionError("Expected save failure"); }
         catch (java.io.IOException expected) { assert Files.readString(notDirectory.toPath()).equals("keep"); }
+
+        RunReport statistics = new RunReport(new JSONObject(), new JSONObject(), RunReport.object("sync_type", 0,
+            "physical", new JSONArray().put(RunReport.object("timestamp_source", 1)).put(RunReport.object("timestamp_source", 1))), 5);
+        statistics.image(0, 100, 1);
+        statistics.image(1, 102, 2);
+        statistics.image(0, 300, 3);
+        statistics.image(1, 304, 4);
+        statistics.result(1, 100L, 5, new JSONObject[] {RunReport.object("sensor_timestamp_ns", 100L), RunReport.object("sensor_timestamp_ns", 102L)});
+        statistics.result(2, 300L, 6, new JSONObject[] {RunReport.object("sensor_timestamp_ns", 300L), RunReport.object("sensor_timestamp_ns", 304L)});
+        JSONObject measured = statistics.complete("completed", 30_000_000_000L, new boolean[] {true, true});
+        assert measured.getJSONObject("summary").getDouble("median_image_timestamp_difference_ns") == 3 : "Median averages the two central observations";
+        assert measured.getJSONArray("pairs").getJSONObject(0).getLong("physical_sensor_timestamp_difference_ns") == 2;
+        assert measured.getJSONObject("summary").getString("exposure_synchronization").equals("approximate_requires_optical_timing_test");
+        assert measured.getJSONObject("summary").getString("stereo_readiness").equals("unvalidated");
         for (File file : directory.listFiles()) Files.delete(file.toPath());
         Files.delete(directory.toPath());
         System.out.println("RunReport checks passed");
