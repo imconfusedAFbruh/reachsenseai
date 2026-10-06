@@ -1,6 +1,6 @@
 # ReachSense RGB web application
 
-Status: proposed for user review. Branch: `develop/rgb-web`.
+Status: approved and implemented as a research prototype. Branch: `develop/rgb-web`. Physical calibration, accuracy and phone performance remain validation gates.
 
 ## Intended outcome
 

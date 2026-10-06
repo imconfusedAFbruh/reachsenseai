@@ -158,4 +158,21 @@ try {
   assert.match(rgbExport.sessions.find(s=>s.participant==='quota-check').frames[0].rgb,/^data:image\/jpeg/);
   console.log('PASS consent and export opt-in; storage failure preserves failed outcome and history');
   await cameraPage.close();
+  const cancelled=await browser.newPage();
+  await cancelled.addInitScript(()=>{navigator.mediaDevices.getUserMedia=()=>new Promise(resolve=>{window.releaseCamera=resolve;});});
+  await cancelled.goto(url+'/');await cancelled.locator('#example').click();
+  await cancelled.waitForFunction(()=>document.querySelector('#calibrationStatus').textContent.includes('EXPLORATORY'));
+  await cancelled.locator('#binding').check();await cancelled.locator('#start').click();await cancelled.locator('#stop').click();
+  await cancelled.evaluate(()=>{const c=document.createElement('canvas');c.width=960;c.height=720;const s=c.captureStream(30);window.cancelledTrack=s.getVideoTracks()[0];window.releaseCamera(s);});
+  await cancelled.waitForFunction(()=>window.cancelledTrack.readyState==='ended');
+  assert.equal(await cancelled.locator('#attempt').isDisabled(),true);
+  await cancelled.evaluate(()=>{
+    navigator.mediaDevices.getUserMedia=async()=>{const c=document.createElement('canvas');c.width=960;c.height=720;const paint=()=>{c.getContext('2d').fillRect(0,0,960,720);requestAnimationFrame(paint);};paint();return c.captureStream(30);};
+    window.Worker=class{postMessage(){this.onerror({message:'Injected worker failure'});}terminate(){}};
+  });
+  await cancelled.locator('#binding').check();await cancelled.locator('#start').click();
+  await cancelled.waitForFunction(()=>document.querySelector('#error').textContent.includes('Injected worker failure'));
+  assert.equal(await cancelled.locator('#attempt').isDisabled(),true);
+  console.log('PASS late camera permission cancellation and worker failure block acquisition');
+  await cancelled.close();
 } finally { await browser.close(); await new Promise(r => server.close(r)); }
