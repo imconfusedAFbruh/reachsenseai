@@ -14,7 +14,7 @@ The objective is the complete measurement instrument described in `plan.md`, wit
 
 | Plan milestone | Software evidence | Physical/device evidence |
 | --- | --- | --- |
-| 1 — Sensor prototype | Viewer/export implemented; 8 core tests, 7 Python checks, and device/simulator builds passed | iPhone capture and recorded feasibility dataset pending |
+| 1 — Sensor prototype | Viewer/export implemented; 8 core tests, 11 Python checks, and device/simulator builds passed | iPhone capture and recorded feasibility dataset pending |
 | 2 — Common-pose tracking | Marker artwork and offline RGB observations available; common-pose solver pending | Measured face geometry and physical detection envelope pending |
 | 3 — Fusion | Pending | Fixture feasibility gate pending |
 | 4 — Physical fixtures | Adjustable CAD, STL, render and nominal face geometry available | Fabrication, endpoint drift, comfort, and remount tests pending |
@@ -50,3 +50,5 @@ Record commands, CI run URLs, outcomes, pushed commits, and unresolved gates her
 - Final marker review: independently rasterized the checked-in SVG and detected all six IDs; black edges span 10 mm with 2 mm quiet zones. Found a Windows Unicode-path export failure. A real CLI test using a Thai output directory failed before the fix; PNG encoding now uses OpenCV in memory and Python's path writer.
 - Final: fixed Unicode-path export — the CLI regression failed before the fix and passes afterward; all 11 Python tests pass locally on Windows. CI now exercises research tools on both Windows and Linux to preserve the platform-specific regression check.
 - Final: minor (deferred): automated artwork assertions verify metric metadata and black-cell count but do not fully reconstruct the SVG geometry. The independent review verified the current artifact's dimensions and decoding; strengthen this regression check before changing artwork layout.
+
+- Marker software GREEN: [CI 37488849249](https://github.com/imconfusedAFbruh/reachsenseai/actions/runs/37488849249) passed all 11 Python checks on both Windows and Linux, all 8 Swift tests, and unsigned iOS device/simulator builds for `557e7d2`. The reviewed increment is published to `main`; the common-pose solver and all physical/device acceptance gates remain open.
