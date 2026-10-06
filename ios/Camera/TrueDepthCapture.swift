@@ -7,6 +7,7 @@ import ReachSenseCore
 final class TrueDepthCapture: NSObject, AVCaptureDataOutputSynchronizerDelegate {
     var onStatus: ((String, Bool) -> Void)?
     var onPreview: ((SensorPreview) -> Void)?
+    var onPreviewUnavailable: (() -> Void)?
     var onExport: ((Result<URL, Error>) -> Void)?
 
     private let session = AVCaptureSession()
@@ -17,6 +18,8 @@ final class TrueDepthCapture: NSObject, AVCaptureDataOutputSynchronizerDelegate 
     private let imageContext = CIContext()
     private var synchronizer: AVCaptureDataOutputSynchronizer?
     private var configured = false
+    private var lifecycle = CaptureLifecycle() // sessionQueue only
+    private var acceptingFrames = false // frameQueue only
     private var observers: [NSObjectProtocol] = []
     private var device: AVCaptureDevice?
     private var latestFrame: CapturedSensorFrame?
@@ -30,8 +33,7 @@ final class TrueDepthCapture: NSObject, AVCaptureDataOutputSynchronizerDelegate 
         super.init()
         for name in [AVCaptureSession.wasInterruptedNotification, AVCaptureSession.runtimeErrorNotification] {
             observers.append(NotificationCenter.default.addObserver(forName: name, object: session, queue: nil) { [weak self] _ in
-                self?.frameQueue.async { self?.latestFrame = nil }
-                self?.publishStatus("Capture interrupted. Stop and restart before saving a new frame.", running: false)
+                self?.stop(message: "Capture interrupted. Restart after the interruption ends.")
             })
         }
     }
@@ -39,36 +41,53 @@ final class TrueDepthCapture: NSObject, AVCaptureDataOutputSynchronizerDelegate 
     deinit { observers.forEach(NotificationCenter.default.removeObserver) }
 
     func start() {
-        switch AVCaptureDevice.authorizationStatus(for: .video) {
-        case .authorized: startAuthorized()
-        case .notDetermined:
-            AVCaptureDevice.requestAccess(for: .video) { [weak self] allowed in
-                if allowed { self?.startAuthorized() }
-                else { self?.publishStatus("Camera permission is required. Enable it in Settings.", running: false) }
+        sessionQueue.async {
+            let generation = self.lifecycle.begin()
+            switch AVCaptureDevice.authorizationStatus(for: .video) {
+            case .authorized: self.startAuthorized(generation)
+            case .notDetermined:
+                AVCaptureDevice.requestAccess(for: .video) { allowed in
+                    self.sessionQueue.async {
+                        guard self.lifecycle.accepts(generation) else { return }
+                        if allowed { self.startAuthorized(generation) }
+                        else { self.publishStatus("Camera permission is required. Enable it in Settings.", running: false) }
+                    }
+                }
+            default: self.publishStatus("Camera access is denied. Enable it in Settings.", running: false)
             }
-        default: publishStatus("Camera access is denied. Enable it in Settings.", running: false)
         }
     }
 
-    func stop() {
+    func stop(message: String = "Capture stopped.") {
         sessionQueue.async {
+            self.lifecycle.stop()
             if self.session.isRunning { self.session.stopRunning() }
-            self.frameQueue.async { self.latestFrame = nil }
-            self.publishStatus("Capture stopped.", running: false)
+            self.frameQueue.async { self.acceptingFrames = false; self.invalidatePreview() }
+            self.publishStatus(message, running: false)
         }
     }
 
-    private func startAuthorized() {
-        sessionQueue.async {
-            do {
-                if !self.configured { try self.configure() }
-                if !self.session.isRunning { self.session.startRunning() }
-                guard self.session.isRunning else { throw CaptureError.message("Capture did not start. Stop and retry.") }
-                self.publishStatus("Front TrueDepth capture active â€” feasibility mode, no flexibility score.", running: true)
-            } catch {
-                self.publishStatus(error.localizedDescription, running: false)
-            }
+    // All starts, permission completions and stops serialize on sessionQueue.
+    private func startAuthorized(_ generation: Int) {
+        guard lifecycle.accepts(generation) else { return }
+        do {
+            guard !session.isInterrupted else { throw CaptureError.message("Camera is interrupted. Retry after it becomes available.") }
+            if !configured { try configure() }
+            if !session.isRunning { session.startRunning() }
+            guard session.isRunning && !session.isInterrupted else { throw CaptureError.message("Capture did not start. Stop and retry.") }
+            publishStatus("Front TrueDepth capture active — feasibility mode, no flexibility score.", running: true)
+            frameQueue.async { self.lastPreviewTime = -Double.infinity; self.acceptingFrames = true }
+        } catch {
+            lifecycle.stop()
+            if session.isRunning { session.stopRunning() }
+            frameQueue.async { self.acceptingFrames = false; self.invalidatePreview() }
+            publishStatus(error.localizedDescription, running: false)
         }
+    }
+
+    private func invalidatePreview() {
+        latestFrame = nil
+        DispatchQueue.main.async { self.onPreviewUnavailable?() }
     }
 
     private func configure() throws {
@@ -140,11 +159,12 @@ final class TrueDepthCapture: NSObject, AVCaptureDataOutputSynchronizerDelegate 
 
     func dataOutputSynchronizer(_ synchronizer: AVCaptureDataOutputSynchronizer,
                                 didOutput collection: AVCaptureSynchronizedDataCollection) {
+        guard acceptingFrames else { return }
         guard let video = collection.synchronizedData(for: videoOutput) as? AVCaptureSynchronizedSampleBufferData,
               let depth = collection.synchronizedData(for: depthOutput) as? AVCaptureSynchronizedDepthData,
               !video.sampleBufferWasDropped, !depth.depthDataWasDropped,
               let rgbBuffer = CMSampleBufferGetImageBuffer(video.sampleBuffer) else {
-            dropped += 1; latestFrame = nil; return
+            dropped += 1; invalidatePreview(); return
         }
         let videoTime = CMTimeGetSeconds(video.timestamp)
         let depthTime = CMTimeGetSeconds(depth.timestamp)
@@ -152,13 +172,13 @@ final class TrueDepthCapture: NSObject, AVCaptureDataOutputSynchronizerDelegate 
         let calibration = converted.cameraCalibrationData.map(CalibrationRecord.init)
         guard videoTime.isFinite, depthTime.isFinite,
               abs(videoTime-depthTime) <= maximumPairSkew else {
-            dropped += 1; latestFrame = nil; return
+            dropped += 1; invalidatePreview(); return
         }
         let map = converted.depthDataMap
         let width = CVPixelBufferGetWidth(map), height = CVPixelBufferGetHeight(map)
         CVPixelBufferLockBaseAddress(map, .readOnly)
         defer { CVPixelBufferUnlockBaseAddress(map, .readOnly) }
-        guard let base = CVPixelBufferGetBaseAddress(map) else { dropped += 1; latestFrame = nil; return }
+        guard let base = CVPixelBufferGetBaseAddress(map) else { dropped += 1; invalidatePreview(); return }
         let stride = CVPixelBufferGetBytesPerRow(map)
         var values: [Float] = []
         values.reserveCapacity(width * height)
@@ -206,11 +226,12 @@ final class TrueDepthCapture: NSObject, AVCaptureDataOutputSynchronizerDelegate 
     func exportFrame(referenceDistanceMillimeters: Double?, note: String) {
         frameQueue.async {
             do {
-                guard let frame = self.latestFrame,
+                guard self.acceptingFrames, let frame = self.latestFrame,
                       let image = self.rgbImage(frame.rgbBuffer), let png = image.pngData() else {
                     throw CaptureError.message("No current synchronized frame is available. Restart capture and try again.")
                 }
-                guard Date().timeIntervalSince(frame.metadata.wallTime) < 1 else {
+                guard PreviewFreshness.isCurrent(capturedAt: frame.metadata.wallTime.timeIntervalSince1970,
+                    now: Date().timeIntervalSince1970, maximumAge: 0.5) else {
                     throw CaptureError.message("The last frame is stale. Wait for a new synchronized observation.")
                 }
                 let depthData = frame.depthValues.withUnsafeBytes { Data($0) }
@@ -222,9 +243,8 @@ final class TrueDepthCapture: NSObject, AVCaptureDataOutputSynchronizerDelegate 
                 encoder.dateEncodingStrategy = .iso8601
                 let folder = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
                     .appendingPathComponent("Feasibility", isDirectory: true)
-                try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-                let url = folder.appendingPathComponent("frame-\(frame.metadata.frameID.uuidString).json")
-                try encoder.encode(record).write(to: url, options: .atomic)
+                let url = try LocalObservationStore.save(encoder.encode(record),
+                    frameID: frame.metadata.frameID, directory: folder)
                 DispatchQueue.main.async { self.onExport?(.success(url)) }
             } catch { DispatchQueue.main.async { self.onExport?(.failure(error)) } }
         }

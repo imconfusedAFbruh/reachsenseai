@@ -22,11 +22,13 @@ Set your signing team in Xcode and run the `ReachSenseAI` scheme on the initial 
 3. Inspect a known-distance bench target at 300, 400, 500, and 600 mm; these are candidate validation distances, not claimed operating guarantees.
 4. Explicitly authorize bench/consented RGB-depth recording, enter independently measured reference distance and target/angle notes, and save repeated paired frames.
 5. Share selected JSON files to a research workstation. They contain lossless RGB PNG, contiguous float32 little-endian depth, timestamps, intrinsics, extrinsics, forward/inverse lens-distortion data, and sensor accuracy/quality labels.
-6. Deny permission, interrupt/background capture, stop/restart, and cover/remove targets. Verify no stale frame is saved and no invalid depth becomes a 3D point.
+6. Deny permission, interrupt/background capture, stop/restart, and cover/remove targets. Verify stale/rejected previews clear, capture does not resume automatically after interruption, a pending permission grant cannot restart stopped capture, no stale frame is saved, and no invalid depth becomes a 3D point.
 
 The point estimate uses reference-dimension-scaled intrinsics and inverse radial mapping from an observed distorted pixel to a rectilinear ray. Stored calibration must be verified against known geometry; sensor observations and software tests do not establish measurement accuracy. Depth filtering is disabled to retain invalid samples/noise for characterization. The 5 ms pair-skew limit is an acquisition diagnostic, not a bench-derived research-QC threshold.
 
-Raw frames are saved locally under Documents/Feasibility with no automatic deletion. Researchers must control media consent and explicit exports. No recording happens merely by opening the camera preview.
+Apple extrinsics describe camera-to-reference-camera geometry: translation is in millimeters and rotation is unitless; the reference camera is not assumed to be RGB. Exported depth and point coordinates are in meters.
+
+Raw frames are saved under Documents/Feasibility with no automatic deletion. The app requests system backup exclusion on both the directory and each saved file; Apple treats this flag as backup guidance, not a guarantee against every backup method. There are no automatic app uploads. Researchers must control media consent and explicit exports. No recording happens merely by opening the camera preview.
 
 ## Automated verification
 

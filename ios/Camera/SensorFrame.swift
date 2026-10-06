@@ -6,6 +6,8 @@ struct CalibrationRecord: Codable {
     let intrinsics: CameraIntrinsics
     let intrinsicMatrixColumnMajor: [Double]
     let extrinsicMatrixColumnMajor: [Double]
+    let extrinsicTranslationUnits: String
+    let extrinsicTransformDirection: String
     let distortionCenterX: Double
     let distortionCenterY: Double
     let lensDistortionLookupTable: Data?
@@ -20,6 +22,8 @@ struct CalibrationRecord: Codable {
                                       referenceWidth: Double(dimensions.width),
                                       referenceHeight: Double(dimensions.height))
         intrinsicMatrixColumnMajor = (0..<3).flatMap { c in (0..<3).map { r in Double(k[c][r]) } }
+        extrinsicTranslationUnits = "millimeters; rotation-unitless"
+        extrinsicTransformDirection = "camera-to-reference-camera; reference-not-assumed-RGB"
         let e = calibration.extrinsicMatrix
         extrinsicMatrixColumnMajor = (0..<4).flatMap { c in (0..<3).map { r in Double(e[c][r]) } }
         distortionCenterX = Double(calibration.lensDistortionCenter.x)

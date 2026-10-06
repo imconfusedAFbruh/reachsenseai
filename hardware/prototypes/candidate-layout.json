@@ -1,0 +1,187 @@
+{
+  "schema_version": 1,
+  "status": "candidate-unmeasured-not-valid-for-scoring",
+  "units": "millimeters",
+  "dictionary": "DICT_4X4_100",
+  "frame": "R: x-lateral, y-distal-along-finger, z-dorsal; origin at tip stop",
+  "virtual_tip_mm": [
+    0,
+    0,
+    0
+  ],
+  "faces": [
+    {
+      "marker_id": 21,
+      "marker_edge_mm": 10,
+      "transform_R_M_row_major": [
+        [
+          1.0,
+          0,
+          0.0,
+          0
+        ],
+        [
+          0,
+          1,
+          0,
+          -18
+        ],
+        [
+          -0.0,
+          0,
+          1.0,
+          21
+        ],
+        [
+          0,
+          0,
+          0,
+          1
+        ]
+      ],
+      "corners_R_mm_tl_tr_br_bl": [
+        [
+          -5.0,
+          -13,
+          21.0
+        ],
+        [
+          5.0,
+          -13,
+          21.0
+        ],
+        [
+          5.0,
+          -23,
+          21.0
+        ],
+        [
+          -5.0,
+          -23,
+          21.0
+        ]
+      ]
+    },
+    {
+      "marker_id": 22,
+      "marker_edge_mm": 10,
+      "transform_R_M_row_major": [
+        [
+          0.8191520442889918,
+          0,
+          0.573576436351046,
+          12.734064310022942
+        ],
+        [
+          0,
+          1,
+          0,
+          -18
+        ],
+        [
+          -0.573576436351046,
+          0,
+          0.8191520442889918,
+          16.98496494554268
+        ],
+        [
+          0,
+          0,
+          0,
+          1
+        ]
+      ],
+      "corners_R_mm_tl_tr_br_bl": [
+        [
+          8.638304088577984,
+          -13,
+          19.85284712729791
+        ],
+        [
+          16.8298245314679,
+          -13,
+          14.117082763787447
+        ],
+        [
+          16.8298245314679,
+          -23,
+          14.117082763787447
+        ],
+        [
+          8.638304088577984,
+          -23,
+          19.85284712729791
+        ]
+      ]
+    },
+    {
+      "marker_id": 23,
+      "marker_edge_mm": 10,
+      "transform_R_M_row_major": [
+        [
+          0.8191520442889918,
+          0,
+          -0.573576436351046,
+          -12.734064310022942
+        ],
+        [
+          0,
+          1,
+          0,
+          -18
+        ],
+        [
+          0.573576436351046,
+          0,
+          0.8191520442889918,
+          16.98496494554268
+        ],
+        [
+          0,
+          0,
+          0,
+          1
+        ]
+      ],
+      "corners_R_mm_tl_tr_br_bl": [
+        [
+          -16.8298245314679,
+          -13,
+          14.117082763787447
+        ],
+        [
+          -8.638304088577984,
+          -13,
+          19.85284712729791
+        ],
+        [
+          -8.638304088577984,
+          -23,
+          19.85284712729791
+        ],
+        [
+          -16.8298245314679,
+          -23,
+          14.117082763787447
+        ]
+      ]
+    }
+  ],
+  "parameters": {
+    "finger_radius_mm": 8,
+    "face_angle_degrees": 35,
+    "marker_edge_mm": 10,
+    "quiet_zone_mm": 2,
+    "support_spacing_mm": 18,
+    "support_length_mm": 6,
+    "wall_mm": 2,
+    "target_height_mm": 10
+  },
+  "required_verification": [
+    "actual printed dimensions and marker placement",
+    "two-region registration and gentle tip seating",
+    "endpoint drift and remount repeatability",
+    "comfort, posture/reach effects, overlap interference",
+    "observability and depth coverage"
+  ]
+}

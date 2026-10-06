@@ -1,5 +1,6 @@
 import SwiftUI
 import UIKit
+import ReachSenseCore
 
 @MainActor
 final class SensorModel: ObservableObject {
@@ -9,13 +10,22 @@ final class SensorModel: ObservableObject {
     @Published var exportedURL: URL?
     @Published var error: String?
     private let capture = TrueDepthCapture()
+    private var captureRequested = false
 
     init() {
         capture.onStatus = { [weak self] text, running in
+            guard !running || self?.captureRequested == true else { return }
             self?.status = text; self?.running = running
+            if !running { self?.captureRequested = false }
             if !running { self?.preview = nil }
         }
-        capture.onPreview = { [weak self] preview in self?.preview = preview }
+        capture.onPreview = { [weak self] preview in
+            guard self?.running == true,
+                  PreviewFreshness.isCurrent(capturedAt: preview.metadata.wallTime.timeIntervalSince1970,
+                    now: Date().timeIntervalSince1970, maximumAge: 0.5) else { return }
+            self?.preview = preview
+        }
+        capture.onPreviewUnavailable = { [weak self] in self?.preview = nil }
         capture.onExport = { [weak self] result in
             switch result {
             case .success(let url): self?.exportedURL = url
@@ -23,8 +33,12 @@ final class SensorModel: ObservableObject {
             }
         }
     }
-    func start() { capture.start() }
-    func stop() { capture.stop() }
+    func start() { captureRequested = true; capture.start() }
+    func stop() { captureRequested = false; running = false; preview = nil; capture.stop() }
+    func expirePreview() {
+        if let preview, !PreviewFreshness.isCurrent(capturedAt: preview.metadata.wallTime.timeIntervalSince1970,
+            now: Date().timeIntervalSince1970, maximumAge: 0.5) { self.preview = nil }
+    }
     func save(distance: String, note: String) {
         exportedURL = nil
         let text = distance.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -79,7 +93,7 @@ struct SensorView: View {
                     TextField("Known reference distance in mm (optional)", text: $referenceDistance).textFieldStyle(.roundedBorder)
                     TextField("Operator note / target / viewing angle", text: $operatorNote).textFieldStyle(.roundedBorder)
                     Toggle("Bench target, or participant consent confirmed for RGB/depth recording", isOn: $recordingAuthorized)
-                    Text("Save stores one current paired frame with lossless RGB, float32 depth, timestamps and calibration. Files stay local indefinitely. Share only when explicitly selected.")
+                    Text("Save stores one current paired frame with lossless RGB, float32 depth, timestamps and calibration. Files are retained indefinitely on device, with system backup exclusion requested. Share only when explicitly selected.")
                         .font(.caption).foregroundStyle(.secondary)
                     Button("Save current synchronized frame") { model.save(distance: referenceDistance, note: operatorNote) }
                         .buttonStyle(.bordered).disabled(!model.running || model.preview == nil || !recordingAuthorized)
@@ -93,6 +107,7 @@ struct SensorView: View {
             .alert("Capture issue", isPresented: Binding(get: { model.error != nil }, set: { if !$0 { model.error = nil } })) {
                 Button("OK") { model.error = nil }
             } message: { Text(model.error ?? "") }
+            .onReceive(Timer.publish(every: 0.2, on: .main, in: .common).autoconnect()) { _ in model.expirePreview() }
             .onChange(of: scenePhase) { _, phase in if phase != .active { model.stop() } }
         }
     }
