@@ -31,4 +31,4 @@ Only demonstrated registration, visibility, and comfort evidence advances the ph
 
 ![Nominal finger fixture candidate](prototypes/finger-fixture-candidate.png)
 
-[STL mesh](prototypes/finger-fixture-candidate.stl) · [nominal face layout](prototypes/candidate-layout.json). Generated from the source with OpenSCAD 2021.01. The STL has 620 triangles, closed two-face edge topology, and nonzero volume. This is mesh evidence only; physical fit, seating rigidity and calibration remain untested.
+[STL mesh](prototypes/finger-fixture-candidate.stl) | [nominal face layout](prototypes/candidate-layout.json). Generated from the source with OpenSCAD 2021.01. The STL has 620 triangles, closed two-face edge topology, and nonzero volume. This is mesh evidence only; physical fit, seating rigidity and calibration remain untested.

@@ -40,3 +40,5 @@ xcodebuild -project ReachSenseAI.xcodeproj -scheme ReachSenseAI \
 ```
 
 CI exercises the core behavior and compiles both device and simulator targets; physical-camera acceptance remains mandatory.
+
+Calibration conventions follow [Apple camera extrinsics](https://developer.apple.com/documentation/avfoundation/avcameracalibrationdata/extrinsicmatrix). Backup handling follows [Apple backup guidance](https://developer.apple.com/documentation/foundation/optimizing-your-app-s-data-for-icloud-backup).

@@ -16,7 +16,6 @@ final class SensorModel: ObservableObject {
         capture.onStatus = { [weak self] text, running in
             guard !running || self?.captureRequested == true else { return }
             self?.status = text; self?.running = running
-            if !running { self?.captureRequested = false }
             if !running { self?.preview = nil }
         }
         capture.onPreview = { [weak self] preview in
