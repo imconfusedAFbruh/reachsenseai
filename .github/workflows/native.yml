@@ -15,6 +15,8 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
+      - name: Install marker experiment dependency
+        run: python3 -m pip install -r scripts/feasibility/requirements.txt
       - name: Research export behavior
         run: python3 -m unittest discover -s python_tests -v
   core-tests:
