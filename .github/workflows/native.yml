@@ -1,4 +1,4 @@
-name: Native software verification
+name: Native verification and research IPA
 on:
   push:
     branches: [main, 'build/**']
@@ -44,7 +44,40 @@ jobs:
           xcodegen generate
       - name: Compile device target
         working-directory: ios
-        run: xcodebuild -project ReachSenseAI.xcodeproj -scheme ReachSenseAI -destination 'generic/platform=iOS' CODE_SIGNING_ALLOWED=NO build
+        run: >-
+          xcodebuild -project ReachSenseAI.xcodeproj -scheme ReachSenseAI
+          -configuration Release -destination 'generic/platform=iOS'
+          -derivedDataPath "$RUNNER_TEMP/reachsense-device"
+          CODE_SIGNING_ALLOWED=NO build
       - name: Compile simulator target
         working-directory: ios
         run: xcodebuild -project ReachSenseAI.xcodeproj -scheme ReachSenseAI -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build
+      - name: Package and verify unsigned research IPA
+        run: |
+          mkdir -p "$RUNNER_TEMP/reachsense-ipa/Payload"
+          ditto "$RUNNER_TEMP/reachsense-device/Build/Products/Release-iphoneos/ReachSenseAI.app" "$RUNNER_TEMP/reachsense-ipa/Payload/ReachSenseAI.app"
+          ditto -c -k --keepParent "$RUNNER_TEMP/reachsense-ipa/Payload" "$RUNNER_TEMP/ReachSenseAI-unsigned.ipa"
+          python3 - "$RUNNER_TEMP/ReachSenseAI-unsigned.ipa" <<'PY'
+          import hashlib, plistlib, struct, sys, zipfile
+          from pathlib import Path
+          path = Path(sys.argv[1])
+          with zipfile.ZipFile(path) as archive:
+              assert archive.testzip() is None, 'IPA checksum failure'
+              root = 'Payload/ReachSenseAI.app/'
+              info = plistlib.loads(archive.read(root + 'Info.plist'))
+              assert info['CFBundleIdentifier'] == 'org.reachsenseai.instrument'
+              assert info['CFBundleSupportedPlatforms'] == ['iPhoneOS'], 'Not a device build'
+              assert info['NSCameraUsageDescription'], 'Missing camera permission description'
+              executable = root + info['CFBundleExecutable']
+              with archive.open(executable) as binary:
+                  assert struct.unpack('<II', binary.read(8)) == (0xfeedfacf, 0x0100000c), 'Not a 64-bit ARM Mach-O executable'
+              assert root + 'embedded.mobileprovision' not in archive.namelist(), 'Expected unsigned sideloading package'
+          print('Verified unsigned iPhone ARM64 IPA:', path.name)
+          print('SHA256:', hashlib.sha256(path.read_bytes()).hexdigest())
+          PY
+      - name: Upload IPA for Windows sideloading
+        uses: actions/upload-artifact@v4
+        with:
+          name: ReachSenseAI-unsigned-${{ github.sha }}
+          path: ${{ runner.temp }}/ReachSenseAI-unsigned.ipa
+          if-no-files-found: error

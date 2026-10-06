@@ -4,6 +4,16 @@ This is Milestone 1 software for front TrueDepth feasibility work. It is not yet
 
 ## Build on a Mac
 
+## Build from Windows with GitHub Actions
+
+Open **Actions → Native verification and research IPA → Run workflow**, select the branch containing this workflow update, and run it. The workflow runs Swift core checks, builds the Release iPhone app and simulator target on a cloud Mac, packages the device app, verifies the IPA structure and ARM64 executable, and uploads `ReachSenseAI-unsigned-<commit>` under the completed run's **Artifacts**.
+
+Download and unzip that artifact ZIP to obtain `ReachSenseAI-unsigned.ipa`. This is an **unsigned native TrueDepth sensor prototype**, not the full measurement app or the browser application. It must be signed before installation. Windows users can sign and install it using [Sideloadly](https://sideloadly.io/) and their own Apple Account. Free-account signing requires periodic refresh; successful compilation/package verification does not establish physical-device capture support. Keep downloaded artifacts locally for your research; GitHub artifact retention is finite.
+
+The build needs no Apple signing secrets or Apple Account credentials in GitHub. Research recording consent and local export behavior remain as described below.
+
+## Build locally on a Mac
+
 Requires Xcode with the iOS 17+ SDK and XcodeGen 2.43 or newer. The app uses the local `ReachSenseCore` Swift package.
 
 ```sh
