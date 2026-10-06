@@ -72,7 +72,7 @@ $('start').onclick=async()=>{
           if(session.rgbConsent)evidence.rgb=raw.toDataURL('image/jpeg',.65);
           session.frames.push(evidence);protocol.observe(r.time,m?.overlapMm,!reason,q.maxFrameGapMs,reason);await persist();controls();
         }
-      }catch(e){error(e);stopCamera('processing-error');}finally{busy=false;}
+      }catch(e){if(!storageFailed){error(e);stopCamera('processing-error');}}finally{busy=false;}
     };
     worker.postMessage({type:'configure',bundle});$('placeholder').style.display='none';controls();
     const capture=()=>{
@@ -90,7 +90,7 @@ $('attempt').onclick=async()=>{
     if(!$('preseat').checked)throw Error('Confirm assignments and seating before every attempt.');
     session??={id:crypto.randomUUID(),created:new Date().toISOString(),participant:$('participant').value.trim(),bundle:structuredClone(bundle),cameraSettings:stream.getVideoTracks()[0].getSettings(),rgbConsent:$('consent').checked,retention:'indefinite-local-until-browser-eviction',frames:[],attempts:[]};
     protocol.start(performance.now(),bundle.researchEligible,$('practice').checked);previous=null;$('preseat').checked=false;await persist();controls();
-  }catch(e){error(e);}
+  }catch(e){if(!storageFailed)error(e);}
 };
 $('cancel').onclick=()=>{protocol.stop('operator-stop',performance.now());persist();controls();};
 for(const [id,seated] of [['accept',true],['reject',false]])$(id).onclick=()=>{protocol.confirm(seated);persist();controls();};
@@ -98,7 +98,7 @@ $('swap').onclick=()=>{stopCamera('assignment-or-seating-change');$('binding').c
 $('new').onclick=()=>{session=null;protocol=new TrialProtocol();storageFailed=false;writing=Promise.resolve();clearMetrics();controls();};
 document.addEventListener('visibilitychange',()=>{if(document.hidden)stopCamera('page-hidden');});
 setInterval(()=>{const now=performance.now();if(protocol.active&&now-protocol.active.started>=15000){protocol.stop('timeout',now);persist();controls();}if(ready&&now-lastReply>bundle.quality.maxAgeMs){clearMetrics();$('quality').textContent='Waiting for fresh observations';}},100);
-async function records(){try{await writing;const saved=await loadSessions();return [...saved.filter(s=>s.id!==session?.id),...(session?[structuredClone(session)]:[])];}catch{if(session)return [structuredClone(session)];throw Error('Saved records could not be read.');}}
+async function records(){try{await writing;}catch{/* Export the newest in-memory outcome even when the write failed. */}try{const saved=await loadSessions();return [...saved.filter(s=>s.id!==session?.id),...(session?[structuredClone(session)]:[])];}catch{if(session){error('Saved records could not be read. Emergency export contains only the current in-memory session.');return [structuredClone(session)];}throw Error('Saved records could not be read.');}}
 function download(text,type,suffix){const url=URL.createObjectURL(new Blob([text],{type})),a=document.createElement('a');a.href=url;a.download=`reachsense-${new Date().toISOString().slice(0,10)}.${suffix}`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
 $('json').onclick=async()=>{try{const saved=await records();if(!$('includeRGB').checked)for(const s of saved)for(const f of s.frames??[])delete f.rgb;download(JSON.stringify({schema:1,mode:'rgb-only',sessions:saved},null,2),'application/json','json');}catch(e){error(e);}};
 $('csv').onclick=async()=>{try{const rows=[['session','participant','position','attempt','practice','valid','score_mm','reason']];for(const s of await records())for(const [i,a] of (s.attempts??[]).entries())rows.push([s.id,s.participant,s.bundle.assignments.position,i+1,a.practice,a.valid,a.score??'',a.reason??'']);download(rows.map(r=>r.map(v=>'"'+String(v).replaceAll('"','""')+'"').join(',')).join('\r\n'),'text/csv','csv');}catch(e){error(e);}};
