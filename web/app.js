@@ -9,7 +9,7 @@ function showScreen(screen){
   for(const button of document.querySelectorAll('.mobile-nav button')){
     if(button.dataset.target===screen)button.setAttribute('aria-current','page');else button.removeAttribute('aria-current');
   }
-  if(matchMedia('(max-width:850px)').matches)window.scrollTo({top:0,behavior:'auto'});
+  if(matchMedia('(max-width:1000px)').matches)window.scrollTo({top:0,behavior:'auto'});
 }
 for(const button of document.querySelectorAll('.mobile-nav button'))button.onclick=()=>showScreen(button.dataset.target);
 function controls(){

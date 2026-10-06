@@ -196,6 +196,9 @@ try {
   assert.ok(await phone.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
   await phone.setViewportSize({width:844,height:390});
   assert.ok(await phone.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+  await phone.setViewportSize({width:932,height:430});
+  assert.equal(await phone.locator('.mobile-nav').isVisible(),true);
+  assert.ok(await phone.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
   await phone.setViewportSize({width:390,height:844});
   for(const screen of ['setup','measure']){await phone.locator(`[data-target="${screen}"]`).click();await phone.screenshot({path:resolve(tmpdir(),`reachsense-mobile-${screen}.png`),fullPage:true});}
   await phone.evaluate(()=>{navigator.mediaDevices.getUserMedia=async()=>{const c=document.createElement('canvas');c.width=960;c.height=720;const paint=()=>{const x=c.getContext('2d');x.fillStyle='white';x.fillRect(0,0,960,720);requestAnimationFrame(paint);};paint();return c.captureStream(30);};});
