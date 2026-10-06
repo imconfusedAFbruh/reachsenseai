@@ -1,0 +1,348 @@
+{
+  "schema": 1,
+  "units": "mm",
+  "dictionary": "DICT_4X4_100",
+  "camera": {
+    "id": "EXAMPLE-NOT-A-CAMERA-CALIBRATION",
+    "version": "1",
+    "width": 960,
+    "height": 720,
+    "K": [
+      [
+        800,
+        0,
+        480
+      ],
+      [
+        0,
+        800,
+        360
+      ],
+      [
+        0,
+        0,
+        1
+      ]
+    ],
+    "distortion": [
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  "fixtures": [
+    {
+      "id": "a",
+      "version": "1",
+      "status": "exploratory",
+      "tip": [
+        0,
+        0,
+        0
+      ],
+      "faces": [
+        {
+          "id": 21,
+          "corners": [
+            [
+              -5,
+              5,
+              0
+            ],
+            [
+              5,
+              5,
+              0
+            ],
+            [
+              5,
+              -5,
+              0
+            ],
+            [
+              -5,
+              -5,
+              0
+            ]
+          ]
+        },
+        {
+          "id": 22,
+          "corners": [
+            [
+              0,
+              5,
+              5
+            ],
+            [
+              0,
+              5,
+              15
+            ],
+            [
+              0,
+              -5,
+              15
+            ],
+            [
+              0,
+              -5,
+              5
+            ]
+          ]
+        },
+        {
+          "id": 23,
+          "corners": [
+            [
+              -5,
+              0,
+              5
+            ],
+            [
+              5,
+              0,
+              5
+            ],
+            [
+              5,
+              0,
+              15
+            ],
+            [
+              -5,
+              0,
+              15
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "b",
+      "version": "1",
+      "status": "exploratory",
+      "tip": [
+        0,
+        0,
+        0
+      ],
+      "faces": [
+        {
+          "id": 31,
+          "corners": [
+            [
+              -5,
+              5,
+              0
+            ],
+            [
+              5,
+              5,
+              0
+            ],
+            [
+              5,
+              -5,
+              0
+            ],
+            [
+              -5,
+              -5,
+              0
+            ]
+          ]
+        },
+        {
+          "id": 32,
+          "corners": [
+            [
+              0,
+              5,
+              5
+            ],
+            [
+              0,
+              5,
+              15
+            ],
+            [
+              0,
+              -5,
+              15
+            ],
+            [
+              0,
+              -5,
+              5
+            ]
+          ]
+        },
+        {
+          "id": 33,
+          "corners": [
+            [
+              -5,
+              0,
+              5
+            ],
+            [
+              5,
+              0,
+              5
+            ],
+            [
+              5,
+              0,
+              15
+            ],
+            [
+              -5,
+              0,
+              15
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "back",
+      "version": "1",
+      "status": "exploratory",
+      "tip": [
+        0,
+        0,
+        0
+      ],
+      "faces": [
+        {
+          "id": 41,
+          "corners": [
+            [
+              -5,
+              5,
+              0
+            ],
+            [
+              5,
+              5,
+              0
+            ],
+            [
+              5,
+              -5,
+              0
+            ],
+            [
+              -5,
+              -5,
+              0
+            ]
+          ]
+        },
+        {
+          "id": 42,
+          "corners": [
+            [
+              0,
+              5,
+              5
+            ],
+            [
+              0,
+              5,
+              15
+            ],
+            [
+              0,
+              -5,
+              15
+            ],
+            [
+              0,
+              -5,
+              5
+            ]
+          ]
+        },
+        {
+          "id": 43,
+          "corners": [
+            [
+              -5,
+              0,
+              5
+            ],
+            [
+              5,
+              0,
+              5
+            ],
+            [
+              5,
+              0,
+              15
+            ],
+            [
+              -5,
+              0,
+              15
+            ]
+          ]
+        }
+      ]
+    }
+  ],
+  "assignments": {
+    "upper": "a",
+    "lower": "b",
+    "body": "back",
+    "position": "right-hand-up"
+  },
+  "bodyTransform": [
+    [
+      1,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      1,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      1,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      1
+    ]
+  ],
+  "quality": {
+    "id": "test-preview",
+    "version": "1",
+    "validation": "exploratory",
+    "maxRmsPx": 2,
+    "maxResidualPx": 5,
+    "minEdgePx": 8,
+    "minGeometryRatio": 0.01,
+    "maxCondition": 100000000,
+    "maxFrameGapMs": 200,
+    "maxAgeMs": 500,
+    "maxSpeedMmS": 30,
+    "maxXmm": 40,
+    "maxZmm": 40,
+    "ambiguityRmsPx": 0.25,
+    "ambiguityDistanceMm": 5,
+    "ambiguityAngleDeg": 5
+  }
+}
