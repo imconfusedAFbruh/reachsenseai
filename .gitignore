@@ -1,0 +1,11 @@
+.build/
+.swiftpm/
+DerivedData/
+*.xcuserstate
+xcuserdata/
+ios/ReachSenseAI.xcodeproj/
+.superpowers/
+data/raw/
+data/sessions/
+hardware/generated/
+.DS_Store

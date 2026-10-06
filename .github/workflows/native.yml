@@ -1,0 +1,21 @@
+name: Native software verification
+on:
+  push:
+    branches: [main, 'build/**']
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: native-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  core-tests:
+    runs-on: macos-15
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Swift toolchain
+        run: swift --version
+      - name: Core behavioral tests
+        run: swift test
