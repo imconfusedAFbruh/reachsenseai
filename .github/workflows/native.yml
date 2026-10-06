@@ -19,3 +19,20 @@ jobs:
         run: swift --version
       - name: Core behavioral tests
         run: swift test
+  ios-build:
+    needs: core-tests
+    runs-on: macos-15
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate native project
+        run: |
+          brew install xcodegen
+          cd ios
+          xcodegen generate
+      - name: Compile device target
+        working-directory: ios
+        run: xcodebuild -project ReachSenseAI.xcodeproj -scheme ReachSenseAI -destination 'generic/platform=iOS' CODE_SIGNING_ALLOWED=NO build
+      - name: Compile simulator target
+        working-directory: ios
+        run: xcodebuild -project ReachSenseAI.xcodeproj -scheme ReachSenseAI -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build
