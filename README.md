@@ -121,7 +121,7 @@ Scored human research follows bench acceptance. Human repeatability and equipmen
 
 ## Explore the project
 
-Build the [native sensor prototype](ios/README.md) on a Mac with Xcode, then run it on the initial iPhone 15 Pro Max to record feasibility observations. The simulator cannot supply TrueDepth data. Follow the [implementation ledger](docs/implementation-progress.md) for verified software evidence and open physical/device gates.
+Build the [native sensor prototype](ios/README.md) on a Mac with Xcode, then run it on the initial iPhone 15 Pro Max to record feasibility observations. The simulator cannot supply TrueDepth data. Inspect the adjustable [finger-fixture candidate and STL](hardware/README.md), and use the [frame inspection tool](scripts/feasibility/README.md) for exported bench observations. Follow the [implementation ledger](docs/implementation-progress.md) for verified software evidence and open physical/device gates.
 
 | Document | Contents |
 | --- | --- |

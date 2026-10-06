@@ -14,10 +14,10 @@ The objective is the complete measurement instrument described in `plan.md`, wit
 
 | Plan milestone | Software evidence | Physical/device evidence |
 | --- | --- | --- |
-| 1 — Sensor prototype | Viewer/export implemented; 5 core tests and device/simulator builds passed | iPhone capture and recorded feasibility dataset pending |
+| 1 — Sensor prototype | Viewer/export implemented; 8 core tests, 7 Python checks, and device/simulator builds passed | iPhone capture and recorded feasibility dataset pending |
 | 2 — Common-pose tracking | Pending | Face dimensions and detection envelope pending |
 | 3 — Fusion | Pending | Fixture feasibility gate pending |
-| 4 — Physical fixtures | Feasibility deliverables in progress | Fabrication, endpoint drift, comfort, and remount tests pending |
+| 4 — Physical fixtures | Adjustable CAD, STL, render and nominal face geometry available | Fabrication, endpoint drift, comfort, and remount tests pending |
 | 5 — Two-body/occlusion tracking | Pending | Occlusion/swap tests pending |
 | 6 — Body reference | Pending | Mount registration and drift tests pending |
 | 7 — Temporal protocol | Pending | Device integration pending |
@@ -40,3 +40,6 @@ Record commands, CI run URLs, outcomes, pushed commits, and unresolved gates her
 - Frame inspection and candidate-layout tools: seven Python behavioral tests pass locally, covering corrupt payloads, invalid samples, reference-dependent statistics, and nominal geometry.
 - Candidate CAD exported and rendered with official OpenSCAD 2021.01. STL edge inspection found 620 triangles with each undirected edge shared twice and nonzero volume; fabrication and anatomical registration are still pending.
 - Fresh sensor review identified stale previews, unintended interruption restart, and missing backup exclusion. Corrections gate permission completions, clear rejected/expired previews, stop interrupted sessions, and request exclusion on saved folders/files. Apple extrinsic translation units and reference direction are now explicit.
+
+- Reviewed sensor/bench-tools software GREEN: [CI 37485981533](https://github.com/imconfusedAFbruh/reachsenseai/actions/runs/37485981533) passed all 8 Swift core tests, all 7 Python checks on Linux, and unsigned device/simulator builds for `33f8d40`. The first rebuild caught a Windows-encoded status character; source encoding was corrected before publication.
+- Published this verified software increment to `main`. Milestone 1 remains open for real iPhone capture/registration evidence and a recorded feasibility dataset; the physical-fixture gate remains open for fabrication, independent endpoint-drift measurements, and comfort/equipment-effect checks.
