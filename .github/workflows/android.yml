@@ -1,0 +1,76 @@
+name: Android dual-camera APK
+on:
+  push:
+    branches: [develop/android-dual-camera]
+    paths: ['android/**', '.github/workflows/android.yml']
+  pull_request:
+    paths: ['android/**', '.github/workflows/android.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  apk:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.11.1'
+      - name: Timing and retained-report checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p android/build/checks evidence
+          curl --fail --location --retry 3 https://repo.maven.apache.org/maven2/org/json/json/20240303/json-20240303.jar -o android/build/json-check.jar
+          echo '3cf6cd6892e32e2b4c1c39e0f52f5248a2f5b37646fdfbb79a66b46b618414ed  android/build/json-check.jar' | sha256sum --check
+          javac -cp android/build/json-check.jar -d android/build/checks android/app/src/main/java/ai/reachsense/dual/TimingEvidence.java android/app/src/main/java/ai/reachsense/dual/RunReport.java android/checks/*.java
+          java -ea -cp android/build/checks:android/build/json-check.jar ai.reachsense.dual.TimingEvidenceCheck | tee evidence/timing-check.txt
+          java -ea -cp android/build/checks:android/build/json-check.jar ai.reachsense.dual.RunReportCheck | tee evidence/report-check.txt
+      - name: Install Android build tools
+        run: '"$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-35" "build-tools;35.0.0"'
+      - name: Build and lint APK
+        env:
+          REACHSENSE_VERSION_CODE: ${{ github.run_number }}
+        run: gradle -p android --no-daemon assembleDebug lintDebug
+      - name: Verify signed installable artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          apk=android/app/build/outputs/apk/debug/app-debug.apk
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs "$apk" | tee evidence/signature.txt
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$apk" | tee evidence/manifest.txt
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib, json, os
+          apk = Path('android/app/build/outputs/apk/debug/app-debug.apk')
+          manifest = Path('evidence/manifest.txt').read_text()
+          assert "package: name='ai.reachsense.dual'" in manifest
+          assert "sdkVersion:'28'" in manifest
+          assert 'android.permission.CAMERA' in manifest
+          assert 'android.permission.INTERNET' not in manifest
+          digest = hashlib.sha256(apk.read_bytes()).hexdigest()
+          Path('evidence/SHA256SUMS.txt').write_text(f'{digest}  ReachSenseAI-dual-camera.apk\n')
+          Path('evidence/build.json').write_text(json.dumps({'commit': os.environ['GITHUB_SHA'], 'run_id': os.environ['GITHUB_RUN_ID'], 'sha256': digest, 'hardware_verified': False}, indent=2))
+          Path('evidence/ReachSenseAI-dual-camera.apk').write_bytes(apk.read_bytes())
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ReachSenseAI-android-debug
+          path: evidence/
+          if-no-files-found: error
+          retention-days: 30
+      - name: Preserve lint evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Android-lint-report
+          path: android/app/build/reports/lint-results-debug.*
+          if-no-files-found: ignore

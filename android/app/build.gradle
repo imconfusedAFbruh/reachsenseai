@@ -1,0 +1,24 @@
+plugins { id 'com.android.application' }
+
+def sourceCommit = System.getenv('GITHUB_SHA') ?: 'local'
+if (!(sourceCommit == 'local' || sourceCommit ==~ /[0-9a-f]{40}/)) {
+    throw new GradleException('Invalid source commit')
+}
+android {
+    namespace 'ai.reachsense.dual'
+    compileSdk 35
+    buildToolsVersion '35.0.0'
+    defaultConfig {
+        applicationId 'ai.reachsense.dual'
+        minSdk 28
+        targetSdk 35
+        versionCode (System.getenv('REACHSENSE_VERSION_CODE') ?: '1').toInteger()
+        versionName '0.1.0'
+        buildConfigField 'String', 'SOURCE_COMMIT', '"' + sourceCommit + '"'
+    }
+    buildFeatures { buildConfig true }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
