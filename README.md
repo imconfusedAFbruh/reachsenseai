@@ -6,7 +6,7 @@ ReachSenseAI is a research measurement instrument in development that uses an iP
 
 The design pairs each score with evidence about alignment, tracking, stability, and calibration—giving researchers a measurement they can inspect, repeat, and export.
 
-> **Project status:** methodology and architecture are documented. The native iOS app, physical fixtures, and validation experiments are still to be developed. No final accuracy claim has been established.
+> **Project status:** the native front TrueDepth sensor prototype and tested geometry core are available. Full rigid-body tracking/fusion, physical fixture acceptance, and research validation remain in development. No final accuracy claim has been established.
 
 ![ReachSenseAI concept showing a front TrueDepth camera on a stand, calibrated upper-back reference, multi-face middle-finger fixtures, and a virtual fingertip close-up](docs/assets/reachsense-concept.png)
 
@@ -121,6 +121,8 @@ Scored human research follows bench acceptance. Human repeatability and equipmen
 
 ## Explore the project
 
+Build the [native sensor prototype](ios/README.md) on a Mac with Xcode, then run it on the initial iPhone 15 Pro Max to record feasibility observations. The simulator cannot supply TrueDepth data. Follow the [implementation ledger](docs/implementation-progress.md) for verified software evidence and open physical/device gates.
+
 | Document | Contents |
 | --- | --- |
 | [Measurement plan](plan.md) | Hardware, acquisition, geometry, QC, calibration, validation, and milestones |
@@ -128,4 +130,4 @@ Scored human research follows bench acceptance. Human repeatability and equipmen
 | [Glossary](GLOSSARY.md) | Canonical measurement and instrument terminology |
 | [Architecture decisions](docs/adr/) | Reasons behind consequential design choices |
 
-Start with the measurement plan for the reproducible methodology. This repository does not yet contain a runnable iOS application.
+Start with the measurement plan for the reproducible methodology. The current app is a sensor feasibility tool; it does not yet produce a shoulder-flexibility score.

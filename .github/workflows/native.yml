@@ -10,6 +10,13 @@ concurrency:
   group: native-${{ github.ref }}
   cancel-in-progress: true
 jobs:
+  research-tools:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Research export behavior
+        run: python3 -m unittest discover -s python_tests -v
   core-tests:
     runs-on: macos-15
     timeout-minutes: 15
