@@ -14,3 +14,8 @@ __pycache__/
 .venv/
 web/node_modules/
 ios/artifacts/
+android/.gradle/
+android/build/
+android/app/build/
+android/artifacts/
+android/local.properties
