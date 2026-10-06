@@ -3,6 +3,7 @@ import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { resolve, relative, extname } from 'node:path';
 import assert from 'node:assert/strict';
+import {tmpdir} from 'node:os';
 
 const require = createRequire(process.env.REACHSENSE_PLAYWRIGHT_ROOT
   ? `${process.env.REACHSENSE_PLAYWRIGHT_ROOT}/package.json` : import.meta.url);
@@ -175,4 +176,37 @@ try {
   assert.equal(await cancelled.locator('#attempt').isDisabled(),true);
   console.log('PASS late camera permission cancellation and worker failure block acquisition');
   await cancelled.close();
+  const phone=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
+  await phone.goto(url+'/');
+  assert.equal(await phone.locator('.mobile-nav').isVisible(),true);
+  assert.equal(await phone.locator('#setup-panel').isVisible(),true);
+  assert.equal(await phone.locator('.viewer').isVisible(),false);
+  for(const screen of ['measure','records','setup']){
+    await phone.locator(`[data-target="${screen}"]`).click();
+    assert.equal(await phone.locator(`[data-target="${screen}"]`).getAttribute('aria-current'),'page');
+    assert.equal(await phone.locator(`[data-panel="${screen}"]`).first().isVisible(),true);
+    assert.ok(await phone.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'No horizontal scrolling on phone');
+  }
+  assert.ok((await phone.locator('#participant').boundingBox()).height>=44);
+  assert.ok((await phone.locator('#start').boundingBox()).height>=44);
+  await phone.locator('[data-target="measure"]').click();
+  assert.equal(await phone.locator('#measureStop').isVisible(),true);
+  assert.equal(await phone.locator('#measureStop').isDisabled(),true);
+  await phone.setViewportSize({width:320,height:640});
+  assert.ok(await phone.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+  await phone.setViewportSize({width:844,height:390});
+  assert.ok(await phone.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+  await phone.setViewportSize({width:390,height:844});
+  for(const screen of ['setup','measure']){await phone.locator(`[data-target="${screen}"]`).click();await phone.screenshot({path:resolve(tmpdir(),`reachsense-mobile-${screen}.png`),fullPage:true});}
+  await phone.evaluate(()=>{navigator.mediaDevices.getUserMedia=async()=>{const c=document.createElement('canvas');c.width=960;c.height=720;const paint=()=>{const x=c.getContext('2d');x.fillStyle='white';x.fillRect(0,0,960,720);requestAnimationFrame(paint);};paint();return c.captureStream(30);};});
+  await phone.locator('[data-target="setup"]').click();await phone.locator('#participant').fill('mobile-check');await phone.locator('#example').click();
+  await phone.waitForFunction(()=>document.querySelector('#calibrationStatus').textContent.includes('EXPLORATORY'));
+  await phone.locator('#binding').check();await phone.locator('#start').click();
+  await phone.waitForFunction(()=>document.body.dataset.screen==='measure'&&!document.querySelector('#attempt').disabled);
+  await phone.locator('#preseat').check();await phone.locator('#attempt').click();
+  await phone.waitForFunction(()=>/· [1-9]\d* recorded observations/.test(document.querySelector('#trialStatus').textContent));
+  await phone.locator('#measureStop').click();assert.equal(await phone.locator('#attempt').isDisabled(),true);
+  await phone.locator('[data-target="records"]').click();assert.match(await phone.locator('#attempts').textContent(),/camera-stopped/);
+  await phone.close();
+  console.log('PASS mobile screens, accessible navigation, touch targets and narrow/landscape layout');
 } finally { await browser.close(); await new Promise(r => server.close(r)); }

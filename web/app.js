@@ -4,10 +4,19 @@ const $=id=>document.getElementById(id),video=$('video'),canvas=$('view'),contex
 const raw=document.createElement('canvas'),rawContext=raw.getContext('2d',{willReadFrequently:true});
 let bundle,worker,stream,busy=false,ready=false,requesting=false,generation=0,frameId=0,previous,lastReply=0,frames=0,rateStart=0,protocol=new TrialProtocol(),session=null,writing=Promise.resolve(),storageFailed=false;
 const error=e=>{$('error').textContent=String(e.message??e);};
+function showScreen(screen){
+  document.body.dataset.screen=screen;
+  for(const button of document.querySelectorAll('.mobile-nav button')){
+    if(button.dataset.target===screen)button.setAttribute('aria-current','page');else button.removeAttribute('aria-current');
+  }
+  if(matchMedia('(max-width:850px)').matches)window.scrollTo({top:0,behavior:'auto'});
+}
+for(const button of document.querySelectorAll('.mobile-nav button'))button.onclick=()=>showScreen(button.dataset.target);
 function controls(){
   $('attempt').disabled=!ready||!bundle||storageFailed||!!protocol.active||!!protocol.candidate||protocol.sessionScore!==null||protocol.attempts.filter(a=>!a.practice).length>=5;
   $('cancel').disabled=!protocol.active;$('post').hidden=!protocol.candidate;
   $('start').disabled=!!stream||!!worker||requesting;$('stop').disabled=!stream&&!worker&&!requesting;
+  $('measureStop').disabled=$('stop').disabled;
   for(const id of ['calibration','example','camera','participant','consent'])$(id).disabled=!!stream||!!worker||requesting||!!protocol.active||!!protocol.candidate||!!session;
   $('binding').disabled=!!stream||!!worker||requesting;
   $('practice').disabled=!!protocol.active||!!protocol.candidate;
@@ -54,7 +63,7 @@ $('start').onclick=async()=>{
     worker.onmessage=async({data:r})=>{
       if(token!==generation)return;
       if(r.type==='error'){error(r.message);stopCamera('worker-error');return;}
-      if(r.type==='ready'){ready=true;rateStart=performance.now();frames=0;lastReply=rateStart;$('state').textContent='Observing';controls();return;}
+      if(r.type==='ready'){ready=true;rateStart=performance.now();frames=0;lastReply=rateStart;$('state').textContent='Observing';controls();showScreen('measure');return;}
       try{
         const now=performance.now(),q=bundle.quality;lastReply=now;frames++;
         let reason=now-r.time>q.maxAgeMs?'stale-frame':Object.values(r.results).find(x=>!x.ok)?.reason;
@@ -83,6 +92,7 @@ $('start').onclick=async()=>{
   }catch(e){if(token===generation){error(e);stopCamera('camera-start-failed');}}
 };
 $('stop').onclick=()=>stopCamera();
+$('measureStop').onclick=()=>stopCamera();
 $('attempt').onclick=async()=>{
   try{
     if(!ready||storageFailed||!bundle)throw Error('Camera is not ready.');
@@ -95,7 +105,7 @@ $('attempt').onclick=async()=>{
 $('cancel').onclick=()=>{protocol.stop('operator-stop',performance.now());persist();controls();};
 for(const [id,seated] of [['accept',true],['reject',false]])$(id).onclick=()=>{protocol.confirm(seated);persist();controls();};
 $('swap').onclick=()=>{stopCamera('assignment-or-seating-change');$('binding').checked=false;$('preseat').checked=false;error('Paused. Confirm physical jig assignments, calibration and seating before restarting. Start a new position session to change assignments.');};
-$('new').onclick=()=>{session=null;protocol=new TrialProtocol();storageFailed=false;writing=Promise.resolve();clearMetrics();controls();};
+$('new').onclick=()=>{session=null;protocol=new TrialProtocol();storageFailed=false;writing=Promise.resolve();clearMetrics();controls();showScreen('setup');};
 document.addEventListener('visibilitychange',()=>{if(document.hidden)stopCamera('page-hidden');});
 setInterval(()=>{const now=performance.now();if(protocol.active&&now-protocol.active.started>=15000){protocol.stop('timeout',now);persist();controls();}if(ready&&now-lastReply>bundle.quality.maxAgeMs){clearMetrics();$('quality').textContent='Waiting for fresh observations';}},100);
 async function records(){try{await writing;}catch{/* Export the newest in-memory outcome even when the write failed. */}try{const saved=await loadSessions();return [...saved.filter(s=>s.id!==session?.id),...(session?[structuredClone(session)]:[])];}catch{if(session){error('Saved records could not be read. Emergency export contains only the current in-memory session.');return [structuredClone(session)];}throw Error('Saved records could not be read.');}}
