@@ -80,9 +80,9 @@ final class DualCapture {
     private CameraDevice camera;
     private CameraCaptureSession session;
     private final ImageReader[] readers = new ImageReader[2];
-    private RunReport report;
+    private volatile RunReport report;
     private Pair selected;
-    private int generation;
+    private volatile int generation;
     private volatile boolean running;
     private final boolean[] previewPending = new boolean[2], identities = new boolean[2];
     private final long[] lastFrame = new long[2], lastPreview = new long[2];
@@ -223,9 +223,11 @@ final class DualCapture {
                 }
             });
             try {
-                boolean supported = camera.isSessionConfigurationSupported(config);
-                report.configuration.put("session_support_probe", supported);
-                if (!supported) { finish("simultaneous_session_unsupported"); return; }
+                if (Build.VERSION.SDK_INT >= 29) {
+                    boolean supported = camera.isSessionConfigurationSupported(config);
+                    report.configuration.put("session_support_probe", supported);
+                    if (!supported) { finish("simultaneous_session_unsupported"); return; }
+                } else report.configuration.put("session_support_probe", "not_available_on_api_28");
             } catch (UnsupportedOperationException error) {
                 report.configuration.put("session_support_probe", "not_available");
             }

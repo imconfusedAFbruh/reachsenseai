@@ -158,7 +158,13 @@ public final class MainActivity extends Activity implements DualCapture.Listener
     @Override public void status(String message) { status.setText(message); }
     @Override public void finished(RunReport report, File file, String message) {
         if (file == null) unsaved = report;
-        status.setText(message + "\n" + report.data.optJSONObject("summary"));
+        org.json.JSONObject summary = report.data.optJSONObject("summary");
+        String exposure = "Exposure synchronization unknown; optical timing test required.";
+        if (summary != null && summary.optString("exposure_synchronization").startsWith("hardware_calibrated"))
+            exposure = "Hardware-calibrated synchronization reported; stereo validation still required.";
+        else if (summary != null && summary.optString("exposure_synchronization").startsWith("approximate"))
+            exposure = "Approximate synchronization reported; optical timing test required.";
+        status.setText(message + (summary == null ? "" : "\n" + summary.optInt("matched_pairs") + " image timestamp pairs.") + "\n" + exposure);
         refreshReports(file); controls(false);
     }
     private void refreshReports(File preferred) {

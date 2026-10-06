@@ -39,7 +39,7 @@ jobs:
       - name: Build and lint APK
         env:
           REACHSENSE_VERSION_CODE: ${{ github.run_number }}
-        run: gradle -p android --no-daemon assembleDebug lintDebug
+        run: gradle -p android --no-daemon --stacktrace assembleDebug lintDebug
       - name: Verify signed installable artifact
         shell: bash
         run: |
