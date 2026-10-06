@@ -1,5 +1,10 @@
 import unittest
 import xml.etree.ElementTree as ET
+import json
+from pathlib import Path
+import subprocess
+import sys
+import tempfile
 
 import cv2
 import numpy as np
@@ -8,6 +13,25 @@ from scripts.feasibility.markers import marker_sheet, observe_markers
 
 
 class MarkerExperimentTests(unittest.TestCase):
+    def test_cli_exports_annotation_and_report_to_unicode_directory(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            image = np.full((200, 200), 255, dtype=np.uint8)
+            dictionary = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_100)
+            image[40:160, 40:160] = cv2.aruco.generateImageMarker(dictionary, 21, 120)
+            ok, encoded = cv2.imencode('.png', image)
+            self.assertTrue(ok)
+            source = root/'input.png'
+            source.write_bytes(encoded.tobytes())
+            output = root/'ทดสอบ'
+            result = subprocess.run([sys.executable, '-m', 'scripts.feasibility.markers', 'detect',
+                str(source), '--output-dir', str(output)], capture_output=True, text=True, encoding='utf-8')
+            self.assertEqual(result.returncode, 0, result.stderr)
+            report = json.loads((output/'observations.json').read_text(encoding='utf-8'))
+            self.assertEqual([m['id'] for m in report['markers']], [21])
+            png = (output/'annotated-rgb.png').read_bytes()
+            self.assertEqual(cv2.imdecode(np.frombuffer(png, dtype=np.uint8), cv2.IMREAD_COLOR).shape, (200, 200, 3))
+
     def test_print_sheet_uses_metric_sizes_and_real_dictionary_bits(self):
         root = ET.fromstring(marker_sheet([21, 31]))
         self.assertEqual(root.attrib['width'], '210mm')

@@ -125,8 +125,10 @@ def main():
                 for marker in report['markers']:
                     points = [np.float32(marker['corners_tl_tr_br_bl_px']).reshape(1, 4, 2)]
                     cv2.aruco.drawDetectedMarkers(annotation, points, np.int32([[marker['id']]]))
-                if not cv2.imwrite(str(args.output_dir/'annotated-rgb.png'), annotation):
-                    raise OSError('Could not save RGB annotation')
+                encoded_ok, encoded = cv2.imencode('.png', annotation)
+                if not encoded_ok:
+                    raise OSError('Could not encode RGB annotation')
+                (args.output_dir/'annotated-rgb.png').write_bytes(encoded.tobytes())
                 (args.output_dir/'observations.json').write_text(json.dumps(report, indent=2, allow_nan=False), encoding='utf-8')
         print(json.dumps(report, indent=2, allow_nan=False))
     except (OSError, ValueError, cv2.error) as error:
