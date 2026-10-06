@@ -38,6 +38,17 @@ public final class RunReportCheck {
         Files.writeString(notDirectory.toPath(), "keep");
         try { report.save(notDirectory); throw new AssertionError("Expected save failure"); }
         catch (java.io.IOException expected) { assert Files.readString(notDirectory.toPath()).equals("keep"); }
+        try { second.save(notDirectory); throw new AssertionError("Expected second save failure"); }
+        catch (java.io.IOException expected) { /* save retains the failed report */ }
+        try { report.save(notDirectory); throw new AssertionError("Expected repeated save failure"); }
+        catch (java.io.IOException expected) { /* repeated failure must not duplicate the report */ }
+        assert RunReport.pendingSnapshot().size() == 2 : "A second failed save cannot replace the first report";
+        assert RunReport.pendingSnapshot().get(0) == report && RunReport.pendingSnapshot().get(1) == second;
+        RunReport.pendingSnapshot().clear();
+        assert RunReport.pendingSnapshot().size() == 2 : "A new Activity snapshot cannot clear retained reports";
+        RunReport.pendingExported(report);
+        assert RunReport.pendingSnapshot().size() == 1 && RunReport.pendingSnapshot().get(0) == second;
+        RunReport.pendingExported(second);
 
         RunReport statistics = new RunReport(new JSONObject(), new JSONObject(), RunReport.object("sync_type", 0,
             "physical", new JSONArray().put(RunReport.object("timestamp_source", 1)).put(RunReport.object("timestamp_source", 1))), 5);

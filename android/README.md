@@ -20,6 +20,8 @@ Each artifact includes signature/manifest evidence, the source commit, SHA-256 d
 
 The pairing filter starts at 5 ms and is adjustable. It is exploratory, not a validated stereo threshold. Same-request image timestamps may be equal even when actual exposures are not synchronized. Missing physical metadata remains missing, and ambiguous timestamp associations are explicitly rejected. Exposure/frame durations, rolling-shutter skew and physical timestamps are retained when provided. Physical timestamp differences are calculated only when both sensors report the comparable REALTIME timestamp source.
 
+If local storage fails, pending reports remain available across screen rotation and new checks are blocked until they are exported. Keep the app open and export every pending report: these fallback copies are in memory and cannot survive the app process being killed while storage is unavailable. Export failures leave the pending copy available for retry.
+
 Approximate/unknown synchronization requires an optical timing experiment with a controlled flashing target or motion. Even hardware-calibrated synchronization needs optical checks and stereo calibration before declaring stereo suitability. This APK does not reconstruct depth, track fixtures or issue fingertip/clinical scores. It establishes capture evidence for that next stage.
 
 ## Build and checks

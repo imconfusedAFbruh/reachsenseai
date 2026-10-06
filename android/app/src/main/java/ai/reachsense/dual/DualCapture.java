@@ -214,7 +214,7 @@ final class DualCapture {
                         session.setRepeatingRequest(request.build(), callbacks(run), worker);
                         configured = true; captureStarted = System.nanoTime();
                         report.event("session_configured", "Two physical YUV outputs in one logical session", captureStarted);
-                        worker.postDelayed(() -> { if (current(run)) finish("completed"); }, 30_000);
+                        worker.postDelayed(() -> { if (current(run) && streamsFresh(System.nanoTime())) finish("completed"); }, 30_000);
                         watch(run);
                     } catch (Exception error) { failure("capture_request_failed", error); }
                 }
@@ -286,15 +286,16 @@ final class DualCapture {
     private void watch(int run) {
         if (!current(run)) return;
         long now = System.nanoTime();
-        for (int stream = 0; stream < 2; stream++) {
-            if (now - (lastFrame[stream] == 0 ? captureStarted : lastFrame[stream]) >= 3_000_000_000L) {
-                report.event("stream_stalled", "Stream " + stream, now); finish("stream_stalled"); return;
-            }
-        }
+        if (!streamsFresh(now)) return;
         String message = String.format(java.util.Locale.US, "%.0f / 30 s · A: %d frames · B: %d frames\n%d timestamp pairs · exposure synchronization still needs validation",
             (now - captureStarted) / 1e9, report.timing.counts[0], report.timing.counts[1], report.timing.pairs.size());
         main.post(() -> { if (current(run) && !closing) listener.status(message); });
         worker.postDelayed(() -> watch(run), 500);
+    }
+    private boolean streamsFresh(long now) {
+        int stalled = TimingEvidence.stalledStream(now, captureStarted, lastFrame);
+        if (stalled == -1) return true;
+        report.event("stream_stalled", "Stream " + stalled, now); finish("stream_stalled"); return false;
     }
     void confirm(int stream, boolean confirmed) { worker.post(() -> { if (running) identities[stream] = confirmed; }); }
     void assignRoles(int choice) {
@@ -329,7 +330,7 @@ final class DualCapture {
     private void deliverSaved(RunReport completed, String message) {
         File saved = null;
         try { saved = completed.save(new File(activity.getFilesDir(), "reports")); }
-        catch (IOException error) { message += "\nLocal save failed; export this in-memory report now: " + error.getMessage(); }
+        catch (IOException error) { message += "\nLocal save failed. Keep the app open and export pending reports before continuing: " + error.getMessage(); }
         File file = saved; String detail = message;
         main.post(() -> { if (!closing) listener.finished(completed, file, detail); });
     }

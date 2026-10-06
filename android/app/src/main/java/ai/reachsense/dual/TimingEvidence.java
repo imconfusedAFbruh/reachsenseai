@@ -73,6 +73,11 @@ public final class TimingEvidence {
         finished = true;
     }
     public int unmatched(int stream) { return counts[stream] - pairs.size(); }
+    public static int stalledStream(long now, long captureStarted, long[] lastFrames) {
+        for (int stream = 0; stream < 2; stream++)
+            if (now - (lastFrames[stream] == 0 ? captureStarted : lastFrames[stream]) >= 3_000_000_000L) return stream;
+        return -1;
+    }
     public static long pairingLimitNs(double milliseconds) {
         double ns = milliseconds * 1_000_000;
         if (!Double.isFinite(ns) || ns < 1 || ns >= Long.MAX_VALUE) throw new IllegalArgumentException("Enter a positive finite pairing limit of at least 0.000001 ms");

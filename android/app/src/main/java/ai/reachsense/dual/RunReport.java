@@ -17,6 +17,12 @@ import org.json.JSONObject;
 
 /** Contains metadata only. Pixel buffers are never serialized. Camera-thread owned. */
 final class RunReport {
+    // ponytail: storage failures retain metadata in-process across Activity recreation;
+    // export promptly, since process death cannot persist it without working storage.
+    private static final List<RunReport> pending = new ArrayList<>();
+    static synchronized void retainPending(RunReport report) { if (!pending.contains(report)) pending.add(report); }
+    static synchronized List<RunReport> pendingSnapshot() { return new ArrayList<>(pending); }
+    static synchronized void pendingExported(RunReport report) { pending.remove(report); }
     final TimingEvidence timing;
     final JSONObject data, configuration;
     final JSONArray images = new JSONArray(), results = new JSONArray(), events = new JSONArray();
@@ -129,6 +135,13 @@ final class RunReport {
     }
     File save(File directory) throws IOException {
         if (!completed) throw new IllegalStateException("Report has not been finalized");
+        try {
+            File saved = write(directory);
+            pendingExported(this);
+            return saved;
+        } catch (IOException error) { retainPending(this); throw error; }
+    }
+    private File write(File directory) throws IOException {
         if (!directory.isDirectory() && !directory.mkdirs()) throw new IOException("Cannot create report directory");
         File destination = new File(directory, "run-" + data.optString("id") + ".json");
         File temporary = File.createTempFile("report-", ".pending", directory);

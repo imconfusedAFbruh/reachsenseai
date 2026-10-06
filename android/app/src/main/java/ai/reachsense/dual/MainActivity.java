@@ -45,7 +45,8 @@ public final class MainActivity extends Activity implements DualCapture.Listener
     private final CheckBox[] identities = new CheckBox[2];
     private final List<DualCapture.Pair> candidates = new ArrayList<>();
     private final List<File> reports = new ArrayList<>();
-    private RunReport unsaved;
+    private List<RunReport> pending = new ArrayList<>();
+    private RunReport exportingPending;
     private File exporting;
     private byte[] exportingMemory;
 
@@ -67,6 +68,7 @@ public final class MainActivity extends Activity implements DualCapture.Listener
         text("S23 Ultra · camera verification", 16, false);
         text("Test two rear lenses together. Reports stay on this phone; preview images are not recorded.", 14, false);
         scan = button("Check cameras", () -> {
+            if (requirePendingExport()) return;
             if (cameraPermission()) capture.discover(); else requestPermissions(new String[] {Manifest.permission.CAMERA}, CAMERA_PERMISSION);
         });
         text("1  Select a physical-camera pair", 18, true);
@@ -119,9 +121,18 @@ public final class MainActivity extends Activity implements DualCapture.Listener
         text("A complete run demonstrates stream delivery. Stereo matching still needs camera calibration and an optical timing test, especially when synchronization is approximate or unknown.", 13, false);
         capture = new DualCapture(this, this);
         controls(false); refreshReports(null);
-        if (cameraPermission()) capture.discover();
+        if (state != null) {
+            String name = state.getString("export_file");
+            for (File file : reports) if (file.getName().equals(name)) exporting = file;
+            String id = state.getString("export_pending_id");
+            for (RunReport report : pending) if (report.data.optString("id").equals(id)) {
+                exportingPending = report; exportingMemory = report.data.toString().getBytes(StandardCharsets.UTF_8);
+            }
+        }
+        if (!requirePendingExport() && cameraPermission()) capture.discover();
     }
     private void begin() {
+        if (requirePendingExport()) return;
         if (!cameraPermission()) { requestPermissions(new String[] {Manifest.permission.CAMERA}, CAMERA_PERMISSION); return; }
         int selection = pairs.getSelectedItemPosition();
         if (selection < 0 || selection >= candidates.size()) { status.setText("Check cameras and select an available pair first."); return; }
@@ -133,10 +144,11 @@ public final class MainActivity extends Activity implements DualCapture.Listener
         } catch (IllegalArgumentException error) { threshold.setError(error.getMessage()); }
     }
     private void controls(boolean running) {
-        scan.setEnabled(!running); pairs.setEnabled(!running); threshold.setEnabled(!running);
-        start.setEnabled(!running && !candidates.isEmpty()); stop.setEnabled(running); roles.setEnabled(running);
+        boolean needsExport = !RunReport.pendingSnapshot().isEmpty();
+        scan.setEnabled(!running && !needsExport); pairs.setEnabled(!running); threshold.setEnabled(!running);
+        start.setEnabled(!running && !needsExport && !candidates.isEmpty()); stop.setEnabled(running); roles.setEnabled(running);
         for (CheckBox box : identities) box.setEnabled(running && roles.getSelectedItemPosition() > 0);
-        saved.setEnabled(!running); export.setEnabled(!running && (!reports.isEmpty() || unsaved != null));
+        saved.setEnabled(!running); export.setEnabled(!running && (!reports.isEmpty() || !pending.isEmpty()));
         if (running) getWindow().addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         else getWindow().clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
     }
@@ -157,7 +169,6 @@ public final class MainActivity extends Activity implements DualCapture.Listener
     @Override public void preview(int stream, Bitmap bitmap) { previews[stream].setImageBitmap(bitmap); }
     @Override public void status(String message) { status.setText(message); }
     @Override public void finished(RunReport report, File file, String message) {
-        if (file == null) unsaved = report;
         org.json.JSONObject summary = report.data.optJSONObject("summary");
         String exposure = "Exposure synchronization unknown; optical timing test required.";
         if (summary != null && summary.optString("exposure_synchronization").startsWith("hardware_calibrated"))
@@ -168,6 +179,7 @@ public final class MainActivity extends Activity implements DualCapture.Listener
         refreshReports(file); controls(false);
     }
     private void refreshReports(File preferred) {
+        pending = RunReport.pendingSnapshot();
         File[] files = new File(getFilesDir(), "reports").listFiles((dir, name) -> name.endsWith(".json"));
         reports.clear();
         if (files != null) {
@@ -175,20 +187,23 @@ public final class MainActivity extends Activity implements DualCapture.Listener
             reports.addAll(Arrays.asList(files));
         }
         List<String> names = new ArrayList<>();
-        if (unsaved != null) names.add("Unsaved report — export now");
+        for (RunReport report : pending) names.add("Unsaved — " + report.data.optString("id").substring(0, 8) + " — export now");
         java.text.DateFormat date = java.text.DateFormat.getDateTimeInstance(java.text.DateFormat.SHORT, java.text.DateFormat.MEDIUM);
         for (File report : reports) names.add(date.format(new java.util.Date(report.lastModified())) + " · " + report.getName().substring(4, 12));
         saved.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, names));
-        if (preferred != null && reports.contains(preferred)) saved.setSelection(reports.indexOf(preferred) + (unsaved == null ? 0 : 1));
-        export.setEnabled(!reports.isEmpty() || unsaved != null);
+        if (preferred != null && reports.contains(preferred) && pending.isEmpty()) saved.setSelection(reports.indexOf(preferred));
+        export.setEnabled(!reports.isEmpty() || !pending.isEmpty());
     }
     private void exportReport() {
         int selection = saved.getSelectedItemPosition();
         if (selection < 0) return;
-        exportingMemory = null; exporting = null;
-        if (unsaved != null && selection == 0) exportingMemory = unsaved.data.toString().getBytes(StandardCharsets.UTF_8);
+        exportingMemory = null; exporting = null; exportingPending = null;
+        if (selection < pending.size()) {
+            exportingPending = pending.get(selection);
+            exportingMemory = exportingPending.data.toString().getBytes(StandardCharsets.UTF_8);
+        }
         else {
-            int index = selection - (unsaved == null ? 0 : 1);
+            int index = selection - pending.size();
             if (index >= 0 && index < reports.size()) exporting = reports.get(index);
         }
         if (exporting == null && exportingMemory == null) return;
@@ -200,13 +215,17 @@ public final class MainActivity extends Activity implements DualCapture.Listener
     @Override protected void onActivityResult(int request, int result, Intent data) {
         super.onActivityResult(request, result, data);
         if (request != EXPORT_REPORT || result != RESULT_OK || data == null || data.getData() == null) return;
-        try (OutputStream output = getContentResolver().openOutputStream(data.getData())) {
+        try {
+          try (OutputStream output = getContentResolver().openOutputStream(data.getData())) {
             if (output == null) throw new java.io.IOException("Destination is unavailable");
             if (exportingMemory != null) output.write(exportingMemory);
             else if (exporting != null) try (FileInputStream input = new FileInputStream(exporting)) {
                 byte[] buffer = new byte[8192]; int length;
                 while ((length = input.read(buffer)) != -1) output.write(buffer, 0, length);
             } else throw new java.io.IOException("Report selection was interrupted. Select and export it again.");
+          }
+            if (exportingPending != null) RunReport.pendingExported(exportingPending);
+            refreshReports(null); controls(false);
             Toast.makeText(this, "Report exported", Toast.LENGTH_SHORT).show();
         } catch (Exception error) { status.setText("Export failed. The original report is retained: " + error.getMessage()); }
     }
@@ -220,8 +239,23 @@ public final class MainActivity extends Activity implements DualCapture.Listener
         }
     }
     @Override protected void onPause() { if (capture != null && capture.isRunning()) capture.stop("backgrounded"); super.onPause(); }
+    @Override protected void onResume() {
+        super.onResume();
+        if (capture != null && !capture.isRunning()) { refreshReports(null); controls(false); }
+    }
+    @Override protected void onSaveInstanceState(Bundle state) {
+        if (exporting != null) state.putString("export_file", exporting.getName());
+        if (exportingPending != null) state.putString("export_pending_id", exportingPending.data.optString("id"));
+        super.onSaveInstanceState(state);
+    }
     @Override protected void onDestroy() { if (capture != null) capture.close(); super.onDestroy(); }
     private boolean cameraPermission() { return checkSelfPermission(Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED; }
+    private boolean requirePendingExport() {
+        if (RunReport.pendingSnapshot().isEmpty()) return false;
+        refreshReports(null); controls(false);
+        status.setText("Local storage failed. Keep the app open and export every pending report before starting another check.");
+        return true;
+    }
     private TextView text(String value, int size, boolean bold) {
         TextView view = new TextView(this); view.setText(value); view.setTextSize(size);
         view.setTextColor(Color.rgb(25, 39, 55)); view.setPadding(0, dp(bold ? 18 : 8), 0, dp(8));

@@ -72,6 +72,10 @@ public final class TimingEvidenceCheck {
         assert metadata.lookup(10).resultIndex == -1;
         metadata.add(4, null, null);
         assert metadata.lookup(0).reason.equals("missing_result");
+        long[] lastFrames = {29_000_000_000L, 26_800_000_000L};
+        assert TimingEvidence.stalledStream(29_500_000_000L, 0, lastFrames) == -1;
+        assert TimingEvidence.stalledStream(30_000_000_000L, 0, lastFrames) == 1 : "Completion must reject a stream stale for 3.2 seconds";
+        assert TimingEvidence.stalledStream(3_000_000_000L, 0, new long[2]) == 0 : "Never-started stream stalls at the boundary";
         System.out.println("TimingEvidence checks passed");
     }
 
