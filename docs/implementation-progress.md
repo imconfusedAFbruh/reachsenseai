@@ -15,7 +15,7 @@ The objective is the complete measurement instrument described in `plan.md`, wit
 | Plan milestone | Software evidence | Physical/device evidence |
 | --- | --- | --- |
 | 1 — Sensor prototype | Viewer/export implemented; 8 core tests, 7 Python checks, and device/simulator builds passed | iPhone capture and recorded feasibility dataset pending |
-| 2 — Common-pose tracking | Pending | Face dimensions and detection envelope pending |
+| 2 — Common-pose tracking | Marker artwork and offline RGB observations available; common-pose solver pending | Measured face geometry and physical detection envelope pending |
 | 3 — Fusion | Pending | Fixture feasibility gate pending |
 | 4 — Physical fixtures | Adjustable CAD, STL, render and nominal face geometry available | Fabrication, endpoint drift, comfort, and remount tests pending |
 | 5 — Two-body/occlusion tracking | Pending | Occlusion/swap tests pending |
@@ -43,3 +43,7 @@ Record commands, CI run URLs, outcomes, pushed commits, and unresolved gates her
 
 - Reviewed sensor/bench-tools software GREEN: [CI 37485981533](https://github.com/imconfusedAFbruh/reachsenseai/actions/runs/37485981533) passed all 8 Swift core tests, all 7 Python checks on Linux, and unsigned device/simulator builds for `33f8d40`. The first rebuild caught a Windows-encoded status character; source encoding was corrected before publication.
 - Published this verified software increment to `main`. Milestone 1 remains open for real iPhone capture/registration evidence and a recorded feasibility dataset; the physical-fixture gate remains open for fabrication, independent endpoint-drift measurements, and comfort/equipment-effect checks.
+
+- Ruling: add pinned headless OpenCV for local marker experiments — it is the planned fiducial implementation, and using its native generator/detector avoids duplicating marker coding. This adds an offline workstation dependency; it does not add an iOS/cloud dependency or bypass the physical feasibility gate.
+- Marker experiments RED: [CI 37487516153](https://github.com/imconfusedAFbruh/reachsenseai/actions/runs/37487516153) installed the dependency successfully and failed all three new behaviors: empty SVG, missing perspective detection and missing duplicate-ID reporting. The same failures were observed locally after installing the official SHA-256-verified wheel.
+- Marker experiments local GREEN: ten Python checks pass, including all three new tests. The actual CLI generated the six-ID metric SVG/manifest and detected IDs 21/31 in a digital input while keeping `measurement_valid=false`. These are software/digital-image checks, not physical observability validation.

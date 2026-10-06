@@ -1,0 +1,15 @@
+{
+  "dictionary": "DICT_4X4_100",
+  "ids": [
+    21,
+    22,
+    23,
+    31,
+    32,
+    33
+  ],
+  "black_edge_mm": 10,
+  "quiet_zone_mm": 2,
+  "opencv_version": "4.13.0",
+  "status": "candidate-artwork-print-and-mount-dimensions-unverified"
+}
