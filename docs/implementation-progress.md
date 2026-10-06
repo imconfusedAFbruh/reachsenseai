@@ -28,3 +28,5 @@ The objective is the complete measurement instrument described in `plan.md`, wit
 ## Evidence
 
 Record commands, CI run URLs, outcomes, pushed commits, and unresolved gates here as work proceeds. No milestone is complete without its specified deliverables.
+
+- Depth geometry RED: [CI 37481921879](https://github.com/imconfusedAFbruh/reachsenseai/actions/runs/37481921879) compiled the package and ran two tests. The valid-point test failed at XCTUnwrap as expected; invalid samples remained rejected. Implements a pinhole calculation with scaled calibration intrinsics, not a claim that unrectified sensor pixels are metrologically valid.
