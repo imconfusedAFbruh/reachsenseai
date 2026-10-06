@@ -75,7 +75,7 @@ final class TrueDepthCapture: NSObject, AVCaptureDataOutputSynchronizerDelegate 
             if !configured { try configure() }
             if !session.isRunning { session.startRunning() }
             guard session.isRunning && !session.isInterrupted else { throw CaptureError.message("Capture did not start. Stop and retry.") }
-            publishStatus("Front TrueDepth capture active — feasibility mode, no flexibility score.", running: true)
+            publishStatus("Front TrueDepth capture active  -  feasibility mode, no flexibility score.", running: true)
             frameQueue.async { self.lastPreviewTime = -Double.infinity; self.acceptingFrames = true }
         } catch {
             lifecycle.stop()
