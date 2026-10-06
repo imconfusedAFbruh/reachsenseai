@@ -1,0 +1,3 @@
+# Verify finger and torso registration as calibrated fixtures
+
+The virtual-tip instrument depends on anatomical registration as well as optical pose estimation, so the next feasibility gate is a multi-region dorsal finger fixture and a repeatable calibrated upper-back mount. These add mechanical complexity and may influence posture or reach, but a fingertip stop or a visible clothing-mounted board alone does not establish the fixed anatomical relationships required by the measurement model. Quantify drift, remount repeatability, and equipment effects before freezing geometry; normative comparison additionally requires measurement-definition equivalence with the source test.

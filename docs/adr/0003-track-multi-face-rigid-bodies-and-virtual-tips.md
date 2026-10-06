@@ -1,0 +1,3 @@
+# Track multi-face rigid bodies and calibrated virtual fingertips
+
+The finalized architecture replaces one planar marker per fingertip with a rigid structure containing at least three uniquely identified faces for each hand. Joint estimation from known face geometry provides alternative observations during rotation and partial occlusion, trading additional mechanical and calibration complexity for intended tracking robustness; this benefit must be validated rather than assumed. Anatomical endpoints are calibrated virtual points, and frames without sufficient current observations of both rigid bodies and the body reference are rejected rather than scored from temporal extrapolation.
